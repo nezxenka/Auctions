@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public final class AuctionSellInventoryService extends BaseAuctionSellService {
 
@@ -30,26 +31,31 @@ public final class AuctionSellInventoryService extends BaseAuctionSellService {
     }
 
     public void sellInventory(Player player, AuctionCurrency currency, double price) {
-        if (validationService.isEconomyAvailable(currency)) {
-            sendMessage(player, config().messages().economyUnavailable());
-            return;
-        }
+        ConfigValues values = config();
+        ConfigValues.InventorySellingConfig inv = values.inventorySelling();
 
-        ConfigValues.InventorySellingConfig inv = config().inventorySelling();
-        String symbol = currency.symbol(config());
-        boolean enabled = currency == AuctionCurrency.VAULT ? inv.moneyAuc() : inv.rublesAuc();
+        boolean enabled = currency == AuctionCurrency.VAULT
+                ? inv.moneyAuc()
+                : inv.rublesAuc();
+
         if (!enabled) {
-            sendMessage(player, config().messages().economyUnavailable());
+            sendMessage(player, values.messages().economyUnavailable());
             return;
         }
 
-        if (validationService.isValidPrice(price, currency)) {
+        if (!validateListingPrice(player, currency, price, validationService)) {
+            return;
+        }
+
+        String symbol = currency.symbol(values);
+
+        if (validationService.isInvalidPrice(price, currency)) {
             sendMessage(player, config().messages().noPrice());
             return;
         }
 
         boolean isDonate = currency == AuctionCurrency.PLAYER_POINTS;
-        if (validationService.isPriceInRange(price, currency, isDonate)) {
+        if (validationService.isPriceOutOfRange(price, currency, isDonate)) {
             double min = validationService.getMinPrice(currency, isDonate);
             double max = validationService.getMaxPrice(currency, isDonate);
             String msg;
@@ -99,9 +105,7 @@ public final class AuctionSellInventoryService extends BaseAuctionSellService {
         int limit = limitService.getLimit(player, currency);
         String playerName = player.getName();
         List<Material> shulkerMaterials = inv.shulkerMaterials();
-        Material displayMaterial = (shulkerMaterials == null || shulkerMaterials.isEmpty())
-                ? Material.WHITE_SHULKER_BOX
-                : shulkerMaterials.get(new Random().nextInt(shulkerMaterials.size()));
+        Material displayMaterial = shulkerMaterials.get(ThreadLocalRandom.current().nextInt(shulkerMaterials.size()));
         ItemStack displayItem = new ItemStack(displayMaterial, 1);
         Map<Integer, ItemStack> reserved = new HashMap<>();
         for (int slot = 0; slot < contents.size(); slot++) {

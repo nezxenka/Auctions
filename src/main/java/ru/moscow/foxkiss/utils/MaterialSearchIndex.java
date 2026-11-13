@@ -1,5 +1,6 @@
 package ru.moscow.foxkiss.utils;
 
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import java.util.*;
 
 public final class MaterialSearchIndex {
@@ -13,7 +14,10 @@ public final class MaterialSearchIndex {
         }
         for (Map.Entry<String, String> entry : translations.entrySet()) {
             String name = entry.getValue();
-            if (name != null && !name.isBlank()) add(entry.getKey(), name);
+            if (name != null && !name.isBlank()) {
+                String plainName = PlainTextComponentSerializer.plainText().serialize(TextUtils.component(name));
+                if (!plainName.isBlank()) add(entry.getKey(), plainName);
+            }
         }
         ArrayDeque<Node> pending = new ArrayDeque<>();
         pending.push(root);

@@ -13,38 +13,38 @@ import java.util.Set;
 public final class SalesHistoryLoader {
 
     public SalesHistoryConfig load(ConfigurationSection root) {
-        ConfigurationSection a = root.getConfigurationSection("menu");
-        ConfigurationSection b = root.getConfigurationSection("button");
-        ConfigurationSection c = root.getConfigurationSection("entry");
-        ConfigurationSection d = root.getConfigurationSection("empty");
-        ConfigurationSection e = root.getConfigurationSection("items");
+        ConfigurationSection menu = root.getConfigurationSection("menu");
+        ConfigurationSection button = root.getConfigurationSection("button");
+        ConfigurationSection entry = root.getConfigurationSection("entry");
+        ConfigurationSection empty = root.getConfigurationSection("empty");
+        ConfigurationSection itemsSection = root.getConfigurationSection("items");
 
         List<ConfigValues.ButtonConfig> items = new ArrayList<>();
         Set<Integer> reserved = new LinkedHashSet<>();
 
-        for (String key : e.getKeys(false)) {
-            ConfigurationSection f = e.getConfigurationSection(key);
-            if (!f.getBoolean("enabled", true)) continue;
+        for (String key : itemsSection.getKeys(false)) {
+            ConfigurationSection itemSection = itemsSection.getConfigurationSection(key);
+            if (!itemSection.getBoolean("enabled", true)) continue;
 
-            ConfigValues.ButtonConfig item = loadItem(f, true);
+            ConfigValues.ButtonConfig item = loadItem(itemSection, true);
             reserved.addAll(item.slots());
             items.add(item);
         }
 
         List<Integer> slots = new ArrayList<>();
-        for (int slot = a.getInt("start-slot") - 1, end = a.getInt("end-slot"); slot < end; slot++) {
+        for (int slot = menu.getInt("start-slot") - 1, end = menu.getInt("end-slot"); slot < end; slot++) {
             if (!reserved.contains(slot)) slots.add(slot);
         }
 
         return new SalesHistoryConfig(
                 root.getBoolean("enabled"),
-                a.getString("title"),
-                a.getInt("size"),
+                menu.getString("title"),
+                menu.getInt("size"),
                 List.copyOf(slots),
-                loadItem(b, true),
-                c.getBoolean("use-original-item"),
-                loadItem(c, false),
-                loadItem(d, true),
+                loadItem(button, true),
+                entry.getBoolean("use-original-item"),
+                loadItem(entry, false),
+                loadItem(empty, true),
                 List.copyOf(items)
         );
     }

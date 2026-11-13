@@ -137,20 +137,11 @@ public final class FMAuction extends JavaPlugin {
     private void registerCommands() {
         auctionCommand = new AuctionCommand(configManager, AuctionCurrency.VAULT, auctionMenu, auctionService);
         donateAuctionCommand = new AuctionCommand(configManager, AuctionCurrency.PLAYER_POINTS, auctionMenu, auctionService);
-
         AdminCommand adminCommand = new AdminCommand(this, configManager);
 
-        PluginCommand ahCommand = getCommand("ah");
-        ahCommand.setExecutor(auctionCommand);
-        ahCommand.setTabCompleter(auctionCommand);
-
-        PluginCommand daucCommand = getCommand("dauc");
-        daucCommand.setExecutor(donateAuctionCommand);
-        daucCommand.setTabCompleter(donateAuctionCommand);
-
-        PluginCommand fmauctionCommand = getCommand("fmauction");
-        fmauctionCommand.setExecutor(adminCommand);
-        fmauctionCommand.setTabCompleter(adminCommand);
+        getCommand("ah").setExecutor(auctionCommand);
+        getCommand("dauc").setExecutor(donateAuctionCommand);
+        getCommand("fmauction").setExecutor(adminCommand);
     }
 
     private void registerListeners() {

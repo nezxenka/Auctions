@@ -53,11 +53,11 @@ public abstract class BaseAuctionService {
         if (commission <= 0) return 0;
         AuctionCurrency currency = rule.currency();
         String symbol = currency.symbol(config());
-        if (!transactionService.hasEnoughMoney(player, currency, commission)) {
+        if (transactionService.hasInsufficientFunds(player, currency, commission)) {
             sendMessage(player, config().messages().commissionNotEnough().replace("{amount}", PriceFormatter.format(commission)).replace("{symbol_value}", symbol));
             return -1;
         }
-        if (transactionService.withdrawMoney(player, currency, commission)) {
+        if (!transactionService.withdrawMoney(player, currency, commission)) {
             sendMessage(player, config().messages().commissionNotEnough().replace("{amount}", PriceFormatter.format(commission)).replace("{symbol_value}", symbol));
             return -1;
         }

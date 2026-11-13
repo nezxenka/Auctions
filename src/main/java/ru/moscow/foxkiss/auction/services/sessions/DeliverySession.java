@@ -19,8 +19,8 @@ public final class DeliverySession {
     public final String name;
     public final IConfigManager config;
     public final EnumSet<AuctionCurrency> claims = EnumSet.noneOf(AuctionCurrency.class);
-    public volatile Player player;
-    public volatile boolean inFlight;
+    public Player player;
+    public boolean inFlight;
     public boolean rescan;
     public boolean allRequested;
     public boolean all;

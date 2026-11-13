@@ -72,7 +72,6 @@ public final class SalesHistoryMenu {
             AuctionRepository.SalesHistoryPage result = loaded;
             scheduler.runSync(() -> {
                 if (!requests.remove(viewer, request)) {
-                    requests.remove(viewer);
                     return;
                 }
                 if (!player.isOnline() || player.getOpenInventory().getTopInventory() != origin
@@ -200,7 +199,7 @@ public final class SalesHistoryMenu {
     }
 
     private Component applyComponent(Player player, String message) {
-        return TextUtils.component(TextUtils.colorize(PlaceholderUtils.apply(player, message, configManager)));
+        return TextUtils.component(PlaceholderUtils.apply(player, message, configManager));
     }
 
     private void sendMessage(Player player, String message) {

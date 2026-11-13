@@ -54,14 +54,17 @@ public final class AuctionMenuListener implements Listener {
     public void reloadCategories() {
         cats.clear();
         sortOrders.clear();
+        AuctionSort[] availableSorts = AuctionSort.values();
         for (AuctionCurrency currency : AuctionCurrency.values()) {
             List<AuctionSort> sorts = new ArrayList<>();
             List<String> sortLore = configManager.getConfigValues().gui(currency).navigation().sort().lore();
-            if (sortLore.isEmpty()) java.util.Collections.addAll(sorts, AuctionSort.values());
+            if (sortLore.isEmpty()) Collections.addAll(sorts, AuctionSort.values());
             else {
                 for (String line : sortLore) {
-                    for (AuctionSort sort : AuctionSort.values()) {
-                        if (line.contains("{sort:" + sort.name() + "}") && !sorts.contains(sort)) sorts.add(sort);
+                    for (AuctionSort sort : availableSorts) {
+                        if (!sorts.contains(sort) && line.contains("{sort:" + sort.name() + "}")) {
+                            sorts.add(sort);
+                        }
                     }
                 }
             }
@@ -94,6 +97,12 @@ public final class AuctionMenuListener implements Listener {
 
         int slot = event.getRawSlot();
         if (slot < 0 || slot >= event.getInventory().getSize()) return;
+
+        String materialGroup = holder.getMaterialGroups().isEmpty() ? null : holder.getMaterialGroups().get(slot);
+        if (materialGroup != null) {
+            auctionMenu.openMaterialOffers(player, holder, materialGroup);
+            return;
+        }
 
         Long lotId = holder.getLot(slot);
         if (lotId != null) {
@@ -298,8 +307,7 @@ public final class AuctionMenuListener implements Listener {
             case CATEGORIES -> {
                 if (auctionMenu.isRefreshing(player) || trySwitchSelection(player.getUniqueId())) return;
                 if (cats.get(holder.getCurrency()).isEmpty()) return;
-                String currentCat = holder.getCategory();
-                String newCat = rightClick ? getPreviousCategory(currentCat, holder.getCurrency()) : getNextCategory(currentCat, holder.getCurrency());
+                String newCat = switchCategory(holder.getCategory(), holder.getCurrency(), rightClick ? -1 : 1);
                 holder.setCategory(newCat);
                 holder.setPage(0);
                 auctionMenu.refreshInventory(player, holder);
@@ -403,18 +411,20 @@ public final class AuctionMenuListener implements Listener {
         return false;
     }
 
-    private String getNextCategory(String current, AuctionCurrency currency) {
+    private String switchCategory(String current, AuctionCurrency currency, int direction) {
         List<String> categories = cats.get(currency);
-        int index = categories.indexOf(current.toLowerCase());
-        if (index < 0) return categories.getFirst();
-        return categories.get((index + 1) % categories.size());
-    }
 
-    private String getPreviousCategory(String current, AuctionCurrency currency) {
-        List<String> categories = cats.get(currency);
-        int index = categories.indexOf(current.toLowerCase());
-        if (index < 0) return categories.getLast();
-        return categories.get((index - 1 + categories.size()) % categories.size());
+        if (categories == null || categories.isEmpty()) {
+            return "all";
+        }
+
+        int index = current == null ? -1 : categories.indexOf(current.toLowerCase(Locale.ROOT));
+
+        if (index < 0) {
+            return direction > 0 ? categories.getFirst() : categories.getLast();
+        }
+
+        return categories.get(Math.floorMod(index + direction, categories.size()));
     }
 
     private void sendMessage(CommandSender sender, String message) {

@@ -1,9 +1,9 @@
 package ru.moscow.foxkiss.database.h2.impl;
 
+import org.bukkit.Bukkit;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import ru.moscow.foxkiss.economy.EconomyProvider;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.*;
@@ -12,8 +12,6 @@ import java.util.logging.Level;
 
 import ru.moscow.foxkiss.auction.*;
 import ru.moscow.foxkiss.auction.AuctionRepository.*;
-import static ru.moscow.foxkiss.database.h2.impl.H2ItemCodec.*;
-import static ru.moscow.foxkiss.database.h2.impl.H2Storage.*;
 
 public final class H2PaymentStore {
     private final H2Storage storage;
@@ -72,37 +70,6 @@ public final class H2PaymentStore {
         }
     }
 
-    public List<PendingPayout> getPendingPayouts(String playerName) {
-        ObjectList<PendingPayout> list = new ObjectArrayList<>();
-        try (Connection conn = storage.open();
-             PreparedStatement ps = conn.prepareStatement("SELECT * FROM auction_pending_payouts WHERE player_name=? AND status='READY' ORDER BY id ASC")) {
-            ps.setString(1, playerName);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    long id = rs.getLong("id");
-                    String name = rs.getString("player_name");
-                    AuctionCurrency curr = AuctionCurrency.valueOf(rs.getString("currency"));
-                    BigDecimal bd = rs.getBigDecimal("amount");
-                    double amount = bd != null ? bd.doubleValue() : 0.0;
-                    long createdAt = rs.getLong("created_at");
-                    list.add(new PendingPayout(id, name, curr, amount, createdAt));
-                }
-            }
-        } catch (Exception e) {
-            storage.plugin.getLogger().log(Level.WARNING, "Ошибка загрузки ожидающих выплат для игрока " + playerName, e);
-        }
-        return list;
-    }
-
-    public void removePendingPayout(long payoutId) {
-        try (Connection conn = storage.open();
-             PreparedStatement ps = conn.prepareStatement("DELETE FROM auction_pending_payouts WHERE id=?")) {
-            ps.setLong(1, payoutId);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            storage.plugin.getLogger().log(Level.WARNING, "Ошибка удаления ожидающей выплаты #" + payoutId, e);
-        }
-    }
 
     void savePayout(Connection conn, String operationId, String player, AuctionCurrency currency, double amount) throws SQLException {
         if (amount == 0) return;
@@ -174,9 +141,9 @@ public final class H2PaymentStore {
                 ps.setLong(1, payout.id());
                 if (ps.executeUpdate() != 1) continue;
             } catch (SQLException e) { throw new IllegalStateException("Не удалось зарезервировать выплату", e); }
-            org.bukkit.Bukkit.getScheduler().runTask(storage.plugin, () -> {
+            Bukkit.getScheduler().runTask(storage.plugin, () -> {
                 try {
-                    boolean paid = economyProvider.deposit(org.bukkit.Bukkit.getOfflinePlayer(payout.playerName()), payout.currency(), payout.amount());
+                    boolean paid = economyProvider.deposit(Bukkit.getOfflinePlayer(payout.playerName()), payout.currency(), payout.amount());
                     storage.asyncExecutor.execute(() -> {
                         try (Connection conn = storage.open(); PreparedStatement ps = conn.prepareStatement("UPDATE auction_pending_payouts SET status=? WHERE id=? AND status='PAYING'")) {
                             ps.setString(1, paid ? "PAID" : "READY"); ps.setLong(2, payout.id()); ps.executeUpdate();

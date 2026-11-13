@@ -1,5 +1,6 @@
 package ru.moscow.foxkiss.gui.holders.records;
 
+import java.util.Objects;
 import ru.moscow.foxkiss.auction.AuctionItem;
 import ru.moscow.foxkiss.auction.AuctionStatus;
 import ru.moscow.foxkiss.auction.PlayerProfile;
@@ -62,8 +63,8 @@ public final class LotDisplayKey {
                 && sales == other.sales
                 && ageBucket == other.ageBucket
                 && daysLeft == other.daysLeft
-                && java.util.Objects.equals(discord, other.discord)
-                && java.util.Objects.equals(store, other.store);
+                && Objects.equals(discord, other.discord)
+                && Objects.equals(store, other.store);
     }
 
     @Override

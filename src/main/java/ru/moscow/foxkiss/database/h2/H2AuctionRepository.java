@@ -1,5 +1,6 @@
 package ru.moscow.foxkiss.database.h2;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.moscow.foxkiss.economy.EconomyProvider;
@@ -9,13 +10,12 @@ import javax.sql.DataSource;
 import java.nio.file.Path;
 import java.sql.*;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import ru.moscow.foxkiss.auction.*;
-import ru.moscow.foxkiss.auction.AuctionRepository.*;
 import ru.moscow.foxkiss.database.h2.impl.*;
 
 public final class H2AuctionRepository implements AuctionRepository {
@@ -54,7 +54,9 @@ public final class H2AuctionRepository implements AuctionRepository {
         deliveries = new H2DeliveryStore(storage);
         payments = new H2PaymentStore(storage, listings);
         purchases = new H2PurchaseStore(storage, sales, payments);
-        menus = new H2MenuStore(plugin, dataSource, sqlRuntime, plugin.getConfig().getBoolean("database.separate-page-count", false));
+        ConfigurationSection database = plugin.getConfig().getConfigurationSection("database");
+        boolean separatePageCount = database.getBoolean("separate-page-count");
+        menus = new H2MenuStore(plugin, dataSource, sqlRuntime, separatePageCount);
 
         try (Connection conn = open()) {
             new H2Schema(plugin).initialize(conn);
@@ -64,19 +66,10 @@ public final class H2AuctionRepository implements AuctionRepository {
         }
     }
 
-    @Override
-    public long create(String sellerName, AuctionCurrency currency, ItemStack itemStack, double price) {
-        return listings.create(sellerName, currency, itemStack, price);
-    }
 
     @Override
     public long createWithinLimit(String sellerName, AuctionCurrency currency, ItemStack itemStack, double price, int limit) {
         return listings.createWithinLimit(sellerName, currency, itemStack, price, limit);
-    }
-
-    @Override
-    public long createInventory(String sellerName, AuctionCurrency currency, ItemStack displayItem, List<ItemStack> contents, double price) {
-        return listings.createInventory(sellerName, currency, displayItem, contents, price);
     }
 
     @Override
@@ -109,42 +102,18 @@ public final class H2AuctionRepository implements AuctionRepository {
     }
 
     @Override
-    public boolean delete(long id) {
-        return listings.delete(id);
-    }
-
-    @Override
-    public void recordSale(String sellerName, String buyerName, AuctionCurrency currency, String itemType, int amount, double price) {
-        sales.recordSale(sellerName, buyerName, currency, itemType, amount, price);
-    }
-
-    @Override
     public SalesHistoryPage loadSalesHistory(String sellerName, AuctionCurrency currency, int requestedPage, int pageSize) {
         return sales.loadSalesHistory(sellerName, currency, requestedPage, pageSize);
     }
 
-    public CompletableFuture<SalesHistoryPage> loadSalesHistoryAsync(String sellerName, AuctionCurrency currency, int requestedPage, int pageSize) {
-        return sales.loadSalesHistoryAsync(sellerName, currency, requestedPage, pageSize);
-    }
-
     @Override
     public boolean markAsProcessing(long id, String operationId, long startedAt) {
-        return listings.markAsProcessing(id, operationId, startedAt);
-    }
-
-    @Override
-    public boolean markAsSelling(long id) {
-        return listings.markAsSelling(id);
+        return !listings.markAsProcessing(id, operationId, startedAt);
     }
 
     @Override
     public void cancelProcessing(long id, String operationId) {
         listings.cancelProcessing(id, operationId);
-    }
-
-    @Override
-    public void restoreStatus(long id) {
-        listings.restoreStatus(id);
     }
 
     @Override
@@ -172,15 +141,6 @@ public final class H2AuctionRepository implements AuctionRepository {
         return purchases.processTake(lotId, operationId, playerName);
     }
 
-    @Override
-    public void confirmDelivery(long pendingDeliveryId, String operationId) {
-        deliveries.confirmDelivery(pendingDeliveryId, operationId);
-    }
-
-    @Override
-    public void removePendingDelivery(long pendingDeliveryId) {
-        deliveries.removePendingDelivery(pendingDeliveryId);
-    }
 
     @Override
     public List<PendingDelivery> getPendingDeliveries(String playerName) {
@@ -188,18 +148,8 @@ public final class H2AuctionRepository implements AuctionRepository {
     }
 
     @Override
-    public List<ItemStack> getPendingInventoryItems(String playerName, AuctionCurrency currency) {
-        return deliveries.getPendingInventoryItems(playerName, currency);
-    }
-
-    @Override
-    public boolean replacePendingInventoryItems(String playerName, AuctionCurrency currency, List<ItemStack> items) {
-        return deliveries.replacePendingInventoryItems(playerName, currency, items);
-    }
-
-    @Override
     public boolean completeInventoryDelivery(long pendingDeliveryId, String operationId, String playerName, AuctionCurrency currency, List<ItemStack> items) {
-        return deliveries.completeInventoryDelivery(pendingDeliveryId, operationId, playerName, currency, items);
+        return false;
     }
 
     @Override
@@ -223,16 +173,6 @@ public final class H2AuctionRepository implements AuctionRepository {
     }
 
     @Override
-    public List<PendingPayout> getPendingPayouts(String playerName) {
-        return payments.getPendingPayouts(playerName);
-    }
-
-    @Override
-    public void removePendingPayout(long payoutId) {
-        payments.removePendingPayout(payoutId);
-    }
-
-    @Override
     public boolean prepareWithdrawal(String operationId) {
         return payments.prepareWithdrawal(operationId);
     }
@@ -253,6 +193,11 @@ public final class H2AuctionRepository implements AuctionRepository {
     }
 
     @Override
+    public List<TopSeller> getTopSellersByRevenue(AuctionCurrency currency, int limit) {
+        return sales.getTopSellersByRevenue(currency, limit);
+    }
+
+    @Override
     public List<TopSeller> getTopSellers(AuctionCurrency currency, int limit) {
         return sales.getTopSellers(currency, limit);
     }
@@ -262,10 +207,6 @@ public final class H2AuctionRepository implements AuctionRepository {
         return sales.getPlayerStats(playerName, currency);
     }
 
-    @Override
-    public List<String> getUniqueMaterialNames(AuctionCurrency currency) {
-        return listings.getUniqueMaterialNames(currency);
-    }
 
     @Override
     public int countActiveBySellerSince(String sellerName, AuctionCurrency currency, long since) {
@@ -276,9 +217,9 @@ public final class H2AuctionRepository implements AuctionRepository {
     public void close() {
         asyncExecutor.shutdown();
         try {
-            if (!asyncExecutor.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
+            if (!asyncExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
                 asyncExecutor.shutdownNow();
-                if (!asyncExecutor.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                if (!asyncExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
                     plugin.getLogger().severe("Database tasks did not stop; leaving the pool open to avoid interrupting a commit");
                     return;
                 }

@@ -3,7 +3,6 @@ package ru.moscow.foxkiss.auction.services;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import ru.moscow.foxkiss.FMAuction;
 import ru.moscow.foxkiss.auction.*;
 import ru.moscow.foxkiss.auction.services.base.BaseAuctionService;
 import ru.moscow.foxkiss.config.interfaces.IConfigManager;
@@ -37,7 +36,7 @@ public final class AuctionBuyService extends BaseAuctionService {
         String operationId = UUID.randomUUID().toString();
         String buyerName = buyer.getName();
         scheduler.runAsync(() -> {
-            if (!repository.markAsProcessing(lotId, operationId, System.currentTimeMillis())) {
+            if (repository.markAsProcessing(lotId, operationId, System.currentTimeMillis())) {
                 scheduler.runSync(() -> finishWithMessage(buyer, config().messages().noId(), callback));
                 return;
             }
@@ -71,7 +70,7 @@ public final class AuctionBuyService extends BaseAuctionService {
             purchased.setAmount(count);
             if (!validationService.canFit(buyer, purchased)) error = config().messages().inventoryFull();
         }
-        if (error == null && validationService.hasEnoughMoney(buyer, item.currency(), price)) error = config().messages().nomoney();
+        if (error == null && validationService.hasInsufficientFunds(buyer, item.currency(), price)) error = config().messages().nomoney();
         if (error != null) { cancel(buyer, item.id(), op, error, callback); return; }
         String buyerName = buyer.getName();
         scheduler.runAsync(() -> {
@@ -81,7 +80,7 @@ public final class AuctionBuyService extends BaseAuctionService {
             }
             scheduler.runSync(() -> {
                 if (!buyer.isOnline()) { cancel(buyer, item.id(), op, config().messages().noId(), callback); return; }
-                if (transactionService.withdrawMoney(buyer, item.currency(), price)) {
+                if (!transactionService.withdrawMoney(buyer, item.currency(), price)) {
                     cancel(buyer, item.id(), op, config().messages().nomoney(), callback);
                     return;
                 }

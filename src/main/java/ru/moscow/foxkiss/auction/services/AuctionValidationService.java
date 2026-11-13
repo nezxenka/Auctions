@@ -1,6 +1,5 @@
 package ru.moscow.foxkiss.auction.services;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -12,25 +11,22 @@ import ru.moscow.foxkiss.config.interfaces.IConfigManager;
 import ru.moscow.foxkiss.economy.EconomyProvider;
 import ru.moscow.foxkiss.utils.ItemUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 public record AuctionValidationService(IConfigManager configManager, EconomyProvider economyProvider) {
 
-    public boolean isEconomyAvailable(AuctionCurrency currency) {
+    public boolean isEconomyUnavailable(AuctionCurrency currency) {
         return !economyProvider.available(currency);
     }
 
-    public boolean isValidPrice(double price, AuctionCurrency currency) {
-        if (price <= 0) return true;
+    public boolean isInvalidPrice(double price, AuctionCurrency currency) {
+        if (!Double.isFinite(price) || price <= 0) return true;
+        if (currency == AuctionCurrency.PLAYER_POINTS && price > Integer.MAX_VALUE) return true;
         if (currency != null && currency.isIntegerOnly()) {
             return !(Math.abs(price - Math.round(price)) < 1e-6);
         }
         return false;
     }
 
-    public boolean isPriceInRange(double price, AuctionCurrency currency, boolean donate) {
+    public boolean isPriceOutOfRange(double price, AuctionCurrency currency, boolean donate) {
 
         ConfigValues.PriceLimits limits = configManager.getConfigValues().priceLimits();
 
@@ -90,7 +86,7 @@ public record AuctionValidationService(IConfigManager configManager, EconomyProv
         return item.expired(configManager.getConfigValues().maxAuctionStorageDays());
     }
 
-    public boolean hasEnoughMoney(Player player, AuctionCurrency currency, double amount) {
+    public boolean hasInsufficientFunds(Player player, AuctionCurrency currency, double amount) {
         return !economyProvider.has(player, currency, amount);
     }
 

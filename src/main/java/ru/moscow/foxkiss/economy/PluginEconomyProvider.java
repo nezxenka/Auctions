@@ -67,24 +67,26 @@ public final class PluginEconomyProvider implements EconomyProvider {
         private final PlayerPointsApi points = new PlayerPointsApi();
 
         private int toPoints(double amount) {
-            if (amount <= 0) return 0;
-            int pts = (int) Math.round(amount);
-            return Math.max(1, pts);
+            if (!Double.isFinite(amount) || amount < 0 || amount > Integer.MAX_VALUE) return -1;
+            return amount == 0 ? 0 : Math.max(1, (int) Math.round(amount));
         }
 
         @Override
         public boolean has(Player player, double amount) {
-            return points.has(player, toPoints(amount));
+            int value = toPoints(amount);
+            return value >= 0 && points.has(player, value);
         }
 
         @Override
         public boolean withdraw(Player player, double amount) {
-            return points.withdraw(player, toPoints(amount));
+            int value = toPoints(amount);
+            return value >= 0 && points.withdraw(player, value);
         }
 
         @Override
         public boolean deposit(OfflinePlayer player, double amount) {
-            return points.deposit(player, toPoints(amount));
+            int value = toPoints(amount);
+            return value >= 0 && points.deposit(player, value);
         }
     }
 

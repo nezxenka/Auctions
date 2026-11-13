@@ -11,19 +11,18 @@ import java.util.List;
 public final class ProfileMenuLoader {
 
     public ProfileMenuConfig load(ConfigurationSection root) {
-        ConfigurationSection a = root.getConfigurationSection("menu");
-        ConfigurationSection b = root.getConfigurationSection("button");
-        ConfigurationSection c = root.getConfigurationSection("items");
+        ConfigurationSection menu = root.getConfigurationSection("menu");
+        ConfigurationSection button = root.getConfigurationSection("button");
+        ConfigurationSection itemsSection = root.getConfigurationSection("items");
         List<ConfigValues.ButtonConfig> items = new ArrayList<>();
 
-        for (String key : c.getKeys(false)) {
-            ConfigurationSection d = c.getConfigurationSection(key);
-            if (!d.getBoolean("enabled", true)) continue;
-            items.add(loadItem(d));
+        for (String key : itemsSection.getKeys(false)) {
+            ConfigurationSection itemSection = itemsSection.getConfigurationSection(key);
+            if (!itemSection.getBoolean("enabled", true)) continue;
+            items.add(loadItem(itemSection));
         }
 
-        return new ProfileMenuConfig(root.getBoolean("enabled"), a.getString("title"), a.getInt("size"),
-                root.getInt("max-length"), root.getString("empty-value"), loadItem(b), List.copyOf(items));
+        return new ProfileMenuConfig(root.getBoolean("enabled"), menu.getString("title"), menu.getInt("size"), root.getInt("max-length"), root.getString("empty-value"), loadItem(button), List.copyOf(items));
     }
 
     private ConfigValues.ButtonConfig loadItem(ConfigurationSection section) {

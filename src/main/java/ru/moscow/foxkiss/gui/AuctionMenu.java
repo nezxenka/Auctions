@@ -1,5 +1,6 @@
 package ru.moscow.foxkiss.gui;
 
+import java.util.logging.Level;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -105,6 +106,11 @@ public final class AuctionMenu {
         openInventory(player, AuctionViewType.SELLING, currency, page, AuctionSort.NEWEST, null, null, null);
     }
 
+    public void openMaterialOffers(Player player, AuctionMenuHolder source, String material) {
+        if (source.getCurrency() != AuctionCurrency.VAULT) return;
+        openInventory(player, AuctionViewType.OFFERS, source.getCurrency(), 0, source.getSort(), source.getSellerFilter(), source.getSearchFilter(), material);
+    }
+
     public void openSalesHistory(Player player, AuctionCurrency currency, int page) {
         salesHistoryMenu.open(player, currency, page);
     }
@@ -193,7 +199,7 @@ public final class AuctionMenu {
             if (pending.holder() == holder) return;
             pending.task().cancel();
         }
-        org.bukkit.scheduler.BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
             takeRefreshes.remove(uuid);
             if (!player.isOnline() || player.getOpenInventory().getTopInventory().getHolder() != holder) return;
             if (isRefreshing(player)) scheduleTakeRefresh(player, holder);
@@ -205,9 +211,12 @@ public final class AuctionMenu {
     public void onPlayerQuit(UUID uuid) {
         TakeRefresh pending = takeRefreshes.remove(uuid);
         if (pending != null) pending.task().cancel();
+
         synchronized (requestStartTime) {
             requestStartTime.removeLong(uuid);
         }
+
+        playerPreferences.remove(uuid);
     }
 
     public void refreshInventory(Player player, AuctionMenuHolder holder) {
@@ -236,7 +245,7 @@ public final class AuctionMenu {
 
     private boolean isCurrentRequest(UUID uuid, long token) {
         synchronized (requestStartTime) {
-            return requestStartTime.containsKey(uuid) && requestStartTime.getLong(uuid) == token;
+            return !requestStartTime.containsKey(uuid) || requestStartTime.getLong(uuid) != token;
         }
     }
 
@@ -304,9 +313,9 @@ public final class AuctionMenu {
 
                 scheduler.runSync(() -> {
                     try {
-                        if (!player.isOnline() || !isCurrentRequest(uuid, token)) return;
+                        if (!player.isOnline() || isCurrentRequest(uuid, token)) return;
 
-                        Inventory inv = builder.buildMainMenu(player, viewType, currency, page, fSort, fSeller, fSearch, fCategory, data.items(), data.totalCount(), pageSize, data.sellingCount(), data.expiredCount(), data.profiles());
+                        Inventory inv = builder.buildMainMenu(player, viewType, currency, page, fSort, fSeller, fSearch, fCategory, data.items(), data.totalCount(), pageSize, data.sellingCount(), data.expiredCount(), data.profiles(), data.materialLots(), data.itemGroups());
                         player.openInventory(inv);
                     } finally {
                         releaseRequest(uuid, token);
@@ -314,7 +323,7 @@ public final class AuctionMenu {
                 });
             } catch (Exception e) {
                 releaseRequest(uuid, token);
-                plugin.getLogger().log(java.util.logging.Level.WARNING, "Не удалось открыть меню аукциона", e);
+                plugin.getLogger().log(Level.WARNING, "Не удалось открыть меню аукциона", e);
             }
         });
     }
@@ -361,11 +370,11 @@ public final class AuctionMenu {
 
                 scheduler.runSync(() -> {
                     try {
-                        if (!player.isOnline() || !isCurrentRequest(uuid, token)) return;
+                        if (!player.isOnline() || isCurrentRequest(uuid, token)) return;
                         if (player.getOpenInventory().getTopInventory().getHolder() != holder) return;
                         if (requestVersion != holder.getRequestVersion()) return;
 
-                        builder.refreshLotDisplays(holder.getInventory(), holder, data.items(), data.totalCount(), pageSize, data.profiles());
+                        builder.refreshLotDisplays(holder.getInventory(), holder, data.items(), data.totalCount(), pageSize, data.profiles(), data.materialLots(), data.itemGroups());
                         builder.refreshNavigationButtons(holder.getInventory(), holder);
                         builder.refreshCounters(holder.getInventory(), holder, data.sellingCount(), data.expiredCount());
                     } finally {
@@ -374,7 +383,7 @@ public final class AuctionMenu {
                 });
             } catch (Exception e) {
                 releaseRequest(uuid, token);
-                plugin.getLogger().log(java.util.logging.Level.WARNING, "Не удалось обновить меню аукциона", e);
+                plugin.getLogger().log(Level.WARNING, "Не удалось обновить меню аукциона", e);
             }
         });
     }

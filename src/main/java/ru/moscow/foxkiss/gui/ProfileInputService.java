@@ -41,7 +41,7 @@ public final class ProfileInputService implements Listener {
     private final JavaPlugin plugin;
     private final Map<UUID, Input> inputs = new HashMap<>();
     private final Set<UUID> saving = new HashSet<>();
-    private volatile boolean closed;
+    private boolean closed;
 
     public ProfileInputService(JavaPlugin plugin, IConfigManager configManager, AuctionRepository repository, SchedulerService scheduler) {
         this.plugin = plugin;
@@ -56,8 +56,7 @@ public final class ProfileInputService implements Listener {
         cancelInput(uuid);
         player.closeInventory();
         Location location = player.getLocation().toBlockLocation();
-        location.setY(Math.max(location.getWorld().getMinHeight(),
-                Math.min(location.getWorld().getMaxHeight() - 1, location.getBlockY() + 2)));
+        location.setY(Math.max(location.getWorld().getMinHeight(), Math.min(location.getWorld().getMaxHeight() - 1, location.getBlockY() + 2)));
 
         BlockData data = Bukkit.createBlockData(Material.OAK_SIGN);
         Sign sign = (Sign) data.createBlockState();
@@ -86,7 +85,6 @@ public final class ProfileInputService implements Listener {
                 }
             }, 1L);
             input.timeout = plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                // Старый таймер не должен отменять новый редактор этого игрока.
                 if (inputs.get(uuid) == input) cancelInput(uuid);
             }, 400L);
         } catch (RuntimeException error) {

@@ -3,6 +3,7 @@ package ru.moscow.foxkiss.gui;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import ru.moscow.foxkiss.auction.AuctionCurrency;
 import ru.moscow.foxkiss.auction.AuctionRepository;
 import ru.moscow.foxkiss.auction.AuctionSort;
@@ -25,20 +26,32 @@ public record ProfileMenu(IConfigManager configManager, AuctionRepository reposi
         if (!config.enabled()) return;
 
         UUID uuid = player.getUniqueId();
+        String playerName = player.getName();
+
         scheduler.runAsync(() -> {
-            PlayerProfile profile = repository.getPlayerProfile(player.getName());
+            PlayerProfile profile = repository.getPlayerProfile(playerName);
+
             scheduler.runSync(() -> {
-                if (!player.isOnline()) return;
+                if (!player.isOnline()) {
+                    return;
+                }
 
                 MainMenuHolder holder = new MainMenuHolder(AuctionViewType.PROFILE, currency, uuid, 0, AuctionSort.NEWEST, null, null, null);
                 String title = TextUtils.colorize(config.title());
                 Inventory inventory = Bukkit.createInventory(holder, config.size(), title);
                 holder.setInventory(inventory);
-                for (ConfigValues.ButtonConfig item : config.items()) {
-                    for (int i = 0; i < item.slots().size(); i++) {
-                        int slot = item.slots().get(i);
-                        inventory.setItem(slot, itemFactory.createButton(replace(item, config, profile)));
-                        holder.addActions(slot, item.actions());
+                for (ConfigValues.ButtonConfig configured : config.items()) {
+                    ConfigValues.ButtonConfig formatted = ProfileButtonFormatter.format(configured, config.emptyValue(), profile);
+
+                    ItemStack button = itemFactory.createButton(formatted);
+
+                    for (int slot : configured.slots()) {
+                        if (slot < 0 || slot >= inventory.getSize()) {
+                            continue;
+                        }
+
+                        inventory.setItem(slot, button.clone());
+                        holder.addActions(slot, configured.actions());
                     }
                 }
                 player.openInventory(inventory);

@@ -1,5 +1,7 @@
     package ru.moscow.foxkiss.gui.builder;
 
+    import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+    import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
     import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
     import it.unimi.dsi.fastutil.objects.ObjectArrayList;
     import it.unimi.dsi.fastutil.objects.ObjectList;
@@ -21,6 +23,7 @@
     import ru.moscow.foxkiss.gui.AuctionViewType;
     import ru.moscow.foxkiss.gui.ItemDisplayFactory;
     import ru.moscow.foxkiss.gui.LotDisplayTime;
+    import ru.moscow.foxkiss.gui.ProfileButtonFormatter;
     import ru.moscow.foxkiss.gui.holders.AuctionMenuHolder;
     import ru.moscow.foxkiss.gui.holders.InventoryMenuHolder;
     import ru.moscow.foxkiss.gui.holders.MainMenuHolder;
@@ -35,8 +38,10 @@
     public final class MenuBuilder {
         private final IConfigManager configManager;
         private final ItemDisplayFactory itemFactory;
+        private static final List<Action> PROFILE_ACTIONS = List.of(new Action(ActionType.PROFILE));
         private final Object2ObjectOpenHashMap<ConfigValues.GlassPane, ItemStack> glassPaneCache = new Object2ObjectOpenHashMap<>();
         private final EnumMap<AuctionViewType, EnumMap<AuctionCurrency, List<Integer>>> slotCache = new EnumMap<>(AuctionViewType.class);
+        private static final List<Action> HISTORY_ACTIONS = List.of(new Action(ActionType.HISTORY));
 
         public MenuBuilder(IConfigManager configManager, ItemDisplayFactory itemFactory) {
             this.configManager = configManager;
@@ -44,7 +49,7 @@
             buildGlassCache();
         }
 
-        public Inventory buildMainMenu(Player player, AuctionViewType viewType, AuctionCurrency currency, int page, AuctionSort sort, String sellerFilter, String searchFilter, String category, List<AuctionItem> filtered, int totalCount, int pageSize, int sellingCount, int expiredCount, Map<String, PlayerProfile> profiles) {
+        public Inventory buildMainMenu(Player player, AuctionViewType viewType, AuctionCurrency currency, int page, AuctionSort sort, String sellerFilter, String searchFilter, String category, List<AuctionItem> filtered, int totalCount, int pageSize, int sellingCount, int expiredCount, Map<String, PlayerProfile> profiles, Map<String, Integer> materialLots, Long2ObjectMap<String> itemGroups) {
             ConfigValues values = configManager.getConfigValues();
             ConfigValues.AuctionGuiConfig gui = values.gui(currency);
             int totalPages = Math.max(1, (int) Math.ceil((double) totalCount / pageSize));
@@ -58,22 +63,36 @@
             holder.setInventory(inv);
 
             fillGlass(inv, getGlassPanes(viewType, values, currency));
-            refreshLotDisplays(inv, holder, filtered, totalCount, pageSize, profiles);
+            refreshLotDisplays(inv, holder, filtered, totalCount, pageSize, profiles, materialLots, itemGroups);
             addNavigationButtons(inv, viewType, sort, category, sellingCount, expiredCount, pageDisplay, holder, currency);
             addExitButton(inv, viewType, pageDisplay, gui, holder);
             addSalesHistoryButton(inv, holder);
-            addProfileButton(inv, holder, profiles.getOrDefault(player.getName(), PlayerProfile.empty(player.getName())));
+            if (viewType == AuctionViewType.SELLING && values.profileMenu().enabled()) {
+                String playerName = player.getName();
+                PlayerProfile profile = profiles.get(playerName);
+
+                if (profile == null) {
+                    profile = PlayerProfile.empty(playerName);
+                }
+
+                addProfileButton(inv, holder, profile);
+            }
             return inv;
         }
 
-        public void refreshLotDisplays(Inventory inventory, AuctionMenuHolder holder, List<AuctionItem> filtered, int totalCount, int pageSize, Map<String, PlayerProfile> profiles) {
+        public void refreshLotDisplays(Inventory inventory, AuctionMenuHolder holder, List<AuctionItem> filtered, int totalCount, int pageSize, Map<String, PlayerProfile> profiles, Map<String, Integer> materialLots, Long2ObjectMap<String> itemGroups) {
             AuctionViewType viewType = holder.getViewType();
             AuctionCurrency currency = holder.getCurrency();
             List<Integer> slots = getAuctionSlots(viewType, currency);
 
             int totalPages = Math.max(1, (int) Math.ceil((double) totalCount / pageSize));
             holder.setTotalPages(totalPages);
-
+            if (viewType == AuctionViewType.MAIN && currency == AuctionCurrency.VAULT && !TextUtils.isNotBlank(holder.getSearchFilter())) {
+                refreshMaterialCards(inventory, holder, filtered, slots, materialLots, itemGroups);
+                return;
+            }
+            holder.getMaterialGroups().clear();
+            holder.getMaterialGroupCounts().clear();
             int count = Math.min(filtered.size(), slots.size());
             Map<Integer, LotSnapshot> snapshots = holder.getLotSnapshots();
 
@@ -131,6 +150,37 @@
                 snapshots.put(slot, next);
             }
         }
+        private void refreshMaterialCards(Inventory inventory, AuctionMenuHolder holder, List<AuctionItem> items, List<Integer> slots, Map<String, Integer> materialLots, Long2ObjectMap<String> itemGroups) {
+            ConfigValues.AuctionGuiConfig gui = configManager.getConfigValues().moneyGui();
+            boolean changedTemplate = !gui.materialCardName().equals(holder.getRenderedMaterialCardName()) || !gui.materialCardLore().equals(holder.getRenderedMaterialCardLore());
+            holder.setRenderedMaterialCardName(gui.materialCardName());
+            holder.setRenderedMaterialCardLore(gui.materialCardLore());
+            holder.getLotsBySlot().clear();
+            holder.getLotsAmountBySlot().clear();
+            holder.getInventoryLotBySlot().clear();
+            holder.getLotSnapshots().clear();
+            int itemCount = items.size();
+            int slotCount = slots.size();
+            for (int i = 0; i < slotCount; i++) {
+                int slot = slots.get(i);
+                if (i >= itemCount) {
+                    holder.getMaterialGroups().remove(slot);
+                    holder.getMaterialGroupCounts().remove(slot);
+                    inventory.setItem(slot, null);
+                    continue;
+                }
+                AuctionItem item = items.get(i);
+                String group = itemGroups.get(item.id());
+                String id = group == null ? item.itemStack().getType().name() : group;
+                String selector = group == null ? id : "group:" + group;
+                int lots = materialLots.getOrDefault(id, 1);
+                if (!changedTemplate && selector.equals(holder.getMaterialGroups().get(slot))
+                        && holder.getMaterialGroupCounts().get(slot) == lots) continue;
+                inventory.setItem(slot, itemFactory.createMaterialCard(item.itemStack(), id, lots));
+                holder.getMaterialGroups().put(slot, selector);
+                holder.getMaterialGroupCounts().put(slot, lots);
+            }
+        }
 
         public void refreshNavigationButtons(Inventory inventory, AuctionMenuHolder holder) {
             ConfigValues.NavigationConfig nav = configManager.getConfigValues().gui(holder.getCurrency()).navigation();
@@ -144,14 +194,14 @@
             }
 
 
-            if (holder.getViewType() != AuctionViewType.MAIN) return;
+            if (holder.getViewType() != AuctionViewType.MAIN && holder.getViewType() != AuctionViewType.OFFERS) return;
             if (holder.getRenderedSort() != holder.getSort()) {
                 inventory.setItem(nav.sort().slot(), itemFactory.createSortButton(holder.getSort(), holder.getCurrency()));
                 holder.addActions(nav.sort().slot(), nav.sort().actions());
                 holder.setRenderedSort(holder.getSort());
             }
 
-            if (!Objects.equals(holder.getRenderedCategory(), holder.getCategory())) {
+            if (holder.getViewType() == AuctionViewType.MAIN && !Objects.equals(holder.getRenderedCategory(), holder.getCategory())) {
                 inventory.setItem(nav.categories().slot(), itemFactory.createCategoryButton(holder.getCategory(), holder.getCurrency()));
                 holder.addActions(nav.categories().slot(), nav.categories().actions());
                 holder.setRenderedCategory(holder.getCategory());
@@ -221,30 +271,33 @@
             ConfigValues values = configManager.getConfigValues();
             if (holder.getViewType() != AuctionViewType.SELLING || !values.salesHistory().enabled()) return;
             ItemStack button = itemFactory.createButton(values.salesHistory().button());
-            List<Action> historyAction = List.of(new Action(ActionType.HISTORY));
             for (int slot : values.salesHistory().button().slots()) {
                 if (slot >= inventory.getSize()) continue;
                 inventory.setItem(slot, button);
-                holder.addActions(slot, historyAction);
+                holder.addActions(slot, HISTORY_ACTIONS);
             }
         }
 
         public void addProfileButton(Inventory inventory, AuctionMenuHolder holder, PlayerProfile profile) {
             ConfigValues values = configManager.getConfigValues();
-            if (holder.getViewType() != AuctionViewType.SELLING || !values.profileMenu().enabled()) return;
-            ConfigValues.ButtonConfig configured = values.profileMenu().button();
-            List<String> lore = new ArrayList<>();
-            String discord = profile.discord().isEmpty() ? values.profileMenu().emptyValue() : profile.discord();
-            String store = profile.storeName().isEmpty() ? values.profileMenu().emptyValue() : profile.storeName();
-            for (String line : configured.lore()) {
-                lore.add(line.replace("{discord}", discord).replace("{store}", store).replace("{sales}", String.valueOf(profile.sales())));
+
+            if (holder.getViewType() != AuctionViewType.SELLING || !values.profileMenu().enabled()) {
+                return;
             }
-            List<Action> profileAction = List.of(new Action(ActionType.PROFILE));
-            ItemStack button = itemFactory.createButton(new ConfigValues.ButtonConfig(configured.material(), configured.name().replace("{discord}", discord).replace("{store}", store).replace("{sales}", String.valueOf(profile.sales())), lore, configured.skullTexture(), configured.actions(), configured.slots(), configured.customModelData()));
-            for (int slot : values.profileMenu().button().slots()) {
-                if (slot >= inventory.getSize()) continue;
-                inventory.setItem(slot, button);
-                holder.addActions(slot, profileAction);
+
+            ConfigValues.ButtonConfig configured = values.profileMenu().button();
+
+            ConfigValues.ButtonConfig formatted = ProfileButtonFormatter.format(configured, values.profileMenu().emptyValue(), profile);
+
+            ItemStack button = itemFactory.createButton(formatted);
+
+            for (int slot : configured.slots()) {
+                if (slot < 0 || slot >= inventory.getSize()) {
+                    continue;
+                }
+
+                inventory.setItem(slot, button.clone());
+                holder.addActions(slot, PROFILE_ACTIONS);
             }
         }
 
@@ -260,7 +313,7 @@
 
         private Map<Integer, ConfigValues.GlassPane> getGlassPanes(AuctionViewType viewType, ConfigValues values, AuctionCurrency currency) {
             return switch (viewType) {
-                case MAIN, SELLING -> values.gui(currency).mainGlass();
+                case MAIN, OFFERS, SELLING -> values.gui(currency).mainGlass();
                 case EXPIRED -> values.gui(currency).expiredGlass();
                 default -> Collections.emptyMap();
             };
@@ -268,7 +321,7 @@
 
         private void addExitButton(Inventory inv, AuctionViewType viewType, String pageDisplay, ConfigValues.AuctionGuiConfig gui, AuctionMenuHolder holder) {
             ConfigValues.ButtonConfig exit = gui.exitButton();
-            if (viewType != AuctionViewType.SELLING && viewType != AuctionViewType.EXPIRED) return;
+            if (viewType != AuctionViewType.SELLING && viewType != AuctionViewType.EXPIRED && viewType != AuctionViewType.OFFERS) return;
 
             ConfigValues.ButtonConfig replaced = getButtonConfig(pageDisplay, exit);
 
@@ -306,6 +359,12 @@
             setNavButton(inv, nav.refresh(), pageDisplay, holder);
             setNavButton(inv, nav.next(), pageDisplay, holder);
 
+            if (viewType == AuctionViewType.OFFERS) {
+                inv.setItem(nav.sort().slot(), itemFactory.createSortButton(sort, currency));
+                holder.addActions(nav.sort().slot(), nav.sort().actions());
+                holder.setRenderedSort(sort);
+            }
+
             if (viewType == AuctionViewType.MAIN) {
                 setNavButtonWithCount(inv, nav.selling(), pageDisplay, sellingCount, holder);
                 setNavButtonWithCount(inv, nav.expired(), pageDisplay, expiredCount, holder);
@@ -326,22 +385,29 @@
 
 
         private void setNavButton(Inventory inv, ConfigValues.NavigationButton button, String pageDisplay, AuctionMenuHolder holder) {
-            List<String> template = button.lore();
-            ObjectList<String> lore = new ObjectArrayList<>(template.size());
-            for (String s : template) {
-                lore.add(s.replace("{page}", pageDisplay));
-            }
-            ItemStack item = itemFactory.createNavigationButton(button, lore);
-            inv.setItem(button.slot(), item);
-            holder.addActions(button.slot(), button.actions());
+            setNavButtonInternal(inv, button, pageDisplay, null, holder);
         }
 
         private void setNavButtonWithCount(Inventory inv, ConfigValues.NavigationButton button, String pageDisplay, int count, AuctionMenuHolder holder) {
-            ObjectList<String> lore = new ObjectArrayList<>();
-            for (String line : button.lore()) {
-                lore.add(line.replace("{page}", pageDisplay).replace("{count}", String.valueOf(count)));
+            setNavButtonInternal(inv, button, pageDisplay, Integer.toString(count), holder);
+        }
+
+        private void setNavButtonInternal(Inventory inv, ConfigValues.NavigationButton button, String pageDisplay, String count, AuctionMenuHolder holder) {
+            List<String> template = button.lore();
+            ObjectList<String> lore = new ObjectArrayList<>(template.size());
+
+            for (String line : template) {
+                String result = line.replace("{page}", pageDisplay);
+
+                if (count != null) {
+                    result = result.replace("{count}", count);
+                }
+
+                lore.add(result);
             }
+
             ItemStack item = itemFactory.createNavigationButton(button, lore);
+
             inv.setItem(button.slot(), item);
             holder.addActions(button.slot(), button.actions());
         }
@@ -389,16 +455,22 @@
 
             if (view.cancel() != null) {
                 ConfigValues.InventoryActionButton cancel = view.cancel();
+
+                ItemStack button = itemFactory.createConfigButton(cancel.material(), colorize(cancel.name()), colorize(cancel.lore(), price, seller));
+
                 for (int slot : cancel.slots()) {
-                    invUi.setItem(slot, itemFactory.createConfigButton(cancel.material(), colorize(cancel.name()), colorize(cancel.lore(), price, seller)));
+                    invUi.setItem(slot, button.clone());
                     holder.addActions(slot, cancel.actions());
                 }
             }
 
             if (view.confirm() != null) {
                 ConfigValues.InventoryActionButton confirm = view.confirm();
+
+                ItemStack button = itemFactory.createConfigButton(confirm.material(), colorize(confirm.name()), colorize(confirm.lore(), price, seller));
+
                 for (int slot : confirm.slots()) {
-                    invUi.setItem(slot, itemFactory.createConfigButton(confirm.material(), colorize(confirm.name()), colorize(confirm.lore(), price, seller)));
+                    invUi.setItem(slot, button.clone());
                     holder.addActions(slot, confirm.actions());
                 }
             }
@@ -409,12 +481,15 @@
         }
 
         private List<String> colorize(List<String> lore, int current, int total) {
-            ObjectList<String> result = new ObjectArrayList<>();
+            String currentValue = Integer.toString(current + 1);
+            String maxValue = Integer.toString(Math.max(1, total));
+
+            ObjectList<String> result = new ObjectArrayList<>(lore.size());
+
             for (String line : lore) {
-                result.add(TextUtils.colorize(line
-                        .replace("{current}", String.valueOf(current + 1))
-                        .replace("{max}", String.valueOf(Math.max(1, total)))));
+                result.add(TextUtils.colorize(line.replace("{current}", currentValue).replace("{max}", maxValue)));
             }
+
             return result;
         }
 
@@ -446,7 +521,7 @@
 
         private void cachePanes(Map<Integer, ConfigValues.GlassPane> panes) {
             for (ConfigValues.GlassPane pane : panes.values()) {
-                glassPaneCache.putIfAbsent(pane, createGlassPane(pane));
+                glassPaneCache.computeIfAbsent(pane, this::createGlassPane);
             }
         }
 

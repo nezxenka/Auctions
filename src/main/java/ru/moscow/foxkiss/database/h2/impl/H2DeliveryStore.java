@@ -20,48 +20,6 @@ public final class H2DeliveryStore {
         this.storage = storage;
     }
 
-    public void confirmDelivery(long pendingDeliveryId, String operationId) {
-        try (Connection conn = storage.open()) {
-            conn.setAutoCommit(false);
-            try {
-                if (pendingDeliveryId > 0) {
-                    try (PreparedStatement ps = conn.prepareStatement("DELETE FROM auction_pending_deliveries WHERE id=?")) {
-                        ps.setLong(1, pendingDeliveryId);
-                        ps.executeUpdate();
-                    }
-                }
-                if (operationId != null && !operationId.isEmpty()) {
-                    try (PreparedStatement ps = conn.prepareStatement("UPDATE auction_transaction_journal SET status=?, updated_at=? WHERE operation_id=?")) {
-                        ps.setString(1, "COMPLETED");
-                        ps.setLong(2, System.currentTimeMillis());
-                        ps.setString(3, operationId);
-                        ps.executeUpdate();
-                    }
-                }
-                conn.commit();
-            } catch (Exception e) {
-                try {
-                    conn.rollback();
-                } catch (SQLException rollbackEx) {
-                    e.addSuppressed(rollbackEx);
-                }
-                storage.plugin.getLogger().log(Level.WARNING, "Ошибка подтверждения выдачи #" + pendingDeliveryId, e);
-            }
-        } catch (SQLException e) {
-            storage.plugin.getLogger().log(Level.WARNING, "Ошибка подключения БД при подтверждении выдачи #" + pendingDeliveryId, e);
-        }
-    }
-
-    public void removePendingDelivery(long pendingDeliveryId) {
-        try (Connection conn = storage.open();
-             PreparedStatement ps = conn.prepareStatement("DELETE FROM auction_pending_deliveries WHERE id=?")) {
-            ps.setLong(1, pendingDeliveryId);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            storage.plugin.getLogger().log(Level.WARNING, "Ошибка удаления ожидающей выдачи #" + pendingDeliveryId, e);
-        }
-    }
-
     public List<PendingDelivery> getPendingDeliveries(String playerName) {
         ObjectList<PendingDelivery> list = new ObjectArrayList<>();
         try (Connection conn = storage.open();
@@ -82,47 +40,6 @@ public final class H2DeliveryStore {
             throw new IllegalStateException("Не удалось загрузить ожидающие доставки", e);
         }
         return list;
-    }
-
-    public List<ItemStack> getPendingInventoryItems(String playerName, AuctionCurrency currency) {
-        try (Connection conn = storage.open();
-             PreparedStatement ps = conn.prepareStatement("SELECT inventory_data FROM auction_pending_inventory_items WHERE player_name=? AND currency=?")) {
-            ps.setString(1, playerName);
-            ps.setString(2, currency.name());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return deserializeInventory(rs.getString("inventory_data"));
-                }
-            }
-        } catch (Exception e) {
-            storage.plugin.getLogger().log(Level.WARNING, "Ошибка загрузки невыданных предметов игрока " + playerName, e);
-        }
-        return new ObjectArrayList<>();
-    }
-
-    public boolean replacePendingInventoryItems(String playerName, AuctionCurrency currency, List<ItemStack> items) {
-        try (Connection conn = storage.open()) {
-            conn.setAutoCommit(false);
-            try {
-                replacePendingInventoryItems(conn, playerName, currency, items);
-                conn.commit();
-                return true;
-            } catch (Exception e) {
-                try {
-                    conn.rollback();
-                } catch (SQLException rollbackEx) {
-                    e.addSuppressed(rollbackEx);
-                }
-                throw e;
-            }
-        } catch (Exception e) {
-            storage.plugin.getLogger().log(Level.WARNING, "Ошибка сохранения невыданных предметов игрока " + playerName, e);
-            return false;
-        }
-    }
-
-    public boolean completeInventoryDelivery(long pendingDeliveryId, String operationId, String playerName, AuctionCurrency currency, List<ItemStack> items) {
-        return completeInventoryDeliveries(playerName, List.of(new DeliveryConfirmation(pendingDeliveryId, currency, items)));
     }
 
     public boolean completeInventoryDeliveries(String playerName, List<DeliveryConfirmation> deliveries) {

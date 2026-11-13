@@ -1,5 +1,6 @@
 package ru.moscow.foxkiss.database.h2;
 
+import java.net.URLConnection;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import javax.sql.DataSource;
@@ -100,7 +101,7 @@ public final class H2LibraryLoader {
     }
 
     private static InputStream openDownload(String address) throws IOException {
-        java.net.URLConnection connection = URI.create(address).toURL().openConnection();
+        URLConnection connection = URI.create(address).toURL().openConnection();
         connection.setConnectTimeout(10_000);
         connection.setReadTimeout(30_000);
         return connection.getInputStream();

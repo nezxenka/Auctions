@@ -27,9 +27,12 @@ public final class UpdateChecker implements Listener {
     private static final Pattern VERSION_PATTERN = Pattern.compile("(?m)^\\s*version\\s*=\\s*['\"]([^'\"]+)['\"]");
 
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+    private static final Pattern PATTERN = Pattern.compile("^[vV]");
+    private static final Pattern REGEX = Pattern.compile("[-+].*$");
+
 
     private final JavaPlugin plugin;
-    private volatile String latestVersion;
+    private String latestVersion;
 
     public UpdateChecker(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -92,9 +95,7 @@ public final class UpdateChecker implements Listener {
             return;
         }
 
-        player.sendMessage(TextUtils.colorize(
-                "&6[" + plugin.getName() + "] &eДоступно обновление &f " + version + " &e. Скачать: &b " + RELEASE_URL
-        ));
+        player.sendMessage(TextUtils.colorize("&6[" + plugin.getName() + "] &eДоступно обновление &f " + version + " &e. Скачать: &b " + RELEASE_URL));
     }
 
     private static boolean isNewer(String candidate, String installed) {
@@ -116,7 +117,7 @@ public final class UpdateChecker implements Listener {
     }
 
     private static String normalize(String version) {
-        return version.replaceFirst("^[vV]", "").replaceFirst("[-+].*$", "");
+        return REGEX.matcher(PATTERN.matcher(version).replaceFirst("")).replaceFirst("");
     }
 
     private static int parsePart(String part) {

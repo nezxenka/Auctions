@@ -1,11 +1,11 @@
 package ru.moscow.foxkiss.database.h2.impl;
 
-
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
-
+import ru.moscow.foxkiss.auction.AuctionLotType;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.logging.Level;
 import java.sql.*;
 
 import static ru.moscow.foxkiss.database.h2.impl.H2ItemCodec.*;
@@ -115,6 +115,9 @@ public final class H2Schema {
                 """);
 
             ensureColumns(conn);
+            st.executeUpdate("ALTER TABLE auction_items ADD COLUMN IF NOT EXISTS group_key VARCHAR(64)");
+            migrateGroupKeys(conn);
+            st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_auction_group_currency_status ON auction_items(currency,status,group_key,created_at)");
             st.executeUpdate("ALTER TABLE sales_history ADD COLUMN IF NOT EXISTS item TEXT");
             st.executeUpdate("ALTER TABLE sales_history ADD COLUMN IF NOT EXISTS operation_id VARCHAR(64)");
             st.executeUpdate("ALTER TABLE auction_pending_deliveries ADD COLUMN IF NOT EXISTS currency VARCHAR(32)");
@@ -232,6 +235,31 @@ public final class H2Schema {
         }
     }
 
+    private void migrateGroupKeys(Connection conn) throws SQLException {
+        try (PreparedStatement select = conn.prepareStatement("SELECT id,item,lot_type,inventory_data FROM auction_items WHERE group_key IS NULL");
+             PreparedStatement update = conn.prepareStatement("UPDATE auction_items SET group_key=? WHERE id=?");
+             ResultSet rows = select.executeQuery()) {
+            int pending = 0;
+            while (rows.next()) {
+                long id = rows.getLong("id");
+                try {
+                    update.setString(1, groupKey(deserialize(rows.getString("item")),
+                            AuctionLotType.valueOf(rows.getString("lot_type")), rows.getString("inventory_data")));
+                } catch (Exception e) {
+                    plugin.getLogger().log(Level.WARNING, "Не удалось определить вариант лота " + id, e);
+                    continue;
+                }
+                update.setLong(2, id);
+                update.addBatch();
+                if (++pending == 128) {
+                    update.executeBatch();
+                    update.clearBatch();
+                    pending = 0;
+                }
+            }
+            if (pending > 0) update.executeBatch();
+        }
+    }
     private void migrateAmounts(Connection conn) {
         try (PreparedStatement select = conn.prepareStatement("SELECT id,item,amount FROM auction_items WHERE amount IS NULL OR amount<=0");
              PreparedStatement update = conn.prepareStatement("UPDATE auction_items SET amount=? WHERE id=?");

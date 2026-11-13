@@ -45,30 +45,30 @@ public final class ConfigManager implements IConfigManager {
         MessagesLoader messagesLoader = new MessagesLoader(prefix);
         ConfigValues.ConfigMessages messages = messagesLoader.load(messagesConfig);
 
-        ConfigurationSection b = config.getConfigurationSection("cooldowns");
+        ConfigurationSection cooldownSection = config.getConfigurationSection("cooldowns");
         CooldownLoader cooldownsLoader = new CooldownLoader();
-        ConfigValues.Cooldowns cooldowns = cooldownsLoader.load(b);
+        ConfigValues.Cooldowns cooldowns = cooldownsLoader.load(cooldownSection);
 
-        ConfigurationSection c = config.getConfigurationSection("price-limits");
+        ConfigurationSection priceLimitsSection = config.getConfigurationSection("price-limits");
         PriceLimitsLoader priceLimitsLoader = new PriceLimitsLoader();
-        ConfigValues.PriceLimits priceLimits = priceLimitsLoader.load(c);
+        ConfigValues.PriceLimits priceLimits = priceLimitsLoader.load(priceLimitsSection);
 
-        ConfigurationSection d = config.getConfigurationSection("vault-auc");
-        ConfigurationSection e = config.getConfigurationSection("playerpoints-auc");
-        ConfigurationSection f = d.getConfigurationSection("groups");
-        ConfigurationSection h = e.getConfigurationSection("groups");
+        ConfigurationSection vaultAuction = config.getConfigurationSection("vault-auc");
+        ConfigurationSection pointsAuction = config.getConfigurationSection("playerpoints-auc");
+        ConfigurationSection vaultGroupSection = vaultAuction.getConfigurationSection("groups");
+        ConfigurationSection pointsGroupSection = pointsAuction.getConfigurationSection("groups");
 
-        Map<String, Integer> vaultGroups = LimitsLoader.load(f);
-        Map<String, Integer> ppGroups = LimitsLoader.load(h);
+        Map<String, Integer> vaultGroups = LimitsLoader.load(vaultGroupSection);
+        Map<String, Integer> ppGroups = LimitsLoader.load(pointsGroupSection);
 
-        ConfigurationSection j = config.getConfigurationSection("auction");
-        ConfigurationSection k = config.getConfigurationSection("categories");
+        ConfigurationSection auctionSection = config.getConfigurationSection("auction");
+        ConfigurationSection categorySection = config.getConfigurationSection("categories");
 
         AuctionSettingsLoader auctionLoader = new AuctionSettingsLoader(plugin);
-        ConfigValues.AuctionData auctionSettings = auctionLoader.load(j, k);
+        ConfigValues.AuctionData auctionSettings = auctionLoader.load(auctionSection, categorySection);
         FileConfiguration inventoryViewConfig = YamlConfiguration.loadConfiguration(getMenuFile("menus/menu_inventory_view.yml"));
-        ConfigurationSection l = config.getConfigurationSection("inventory-selling");
-        ConfigValues.InventorySellingConfig inventorySelling = auctionLoader.loadInventorySelling(l, inventoryViewConfig);
+        ConfigurationSection inventorySellingSection = config.getConfigurationSection("inventory-selling");
+        ConfigValues.InventorySellingConfig inventorySelling = auctionLoader.loadInventorySelling(inventorySellingSection, inventoryViewConfig);
 
         ConfigurationSection commissionSection = config.getConfigurationSection("commission");
         ConfigValues.CommissionConfig commission = new CommissionLoader().load(commissionSection);
@@ -125,6 +125,6 @@ public final class ConfigManager implements IConfigManager {
         if (!file.exists()) {
             plugin.saveResource("items.yml", false);
         }
-        ItemUtils.loadTranslations(file);
+        ItemUtils.loadTranslations(file, plugin.getLogger());
     }
 }

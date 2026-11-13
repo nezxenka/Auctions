@@ -1,8 +1,11 @@
 package ru.moscow.foxkiss.commands;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -85,7 +88,7 @@ public final class AuctionCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        String query = String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length)).trim();
+        String query = String.join(" ", Arrays.copyOfRange(args, 1, args.length)).trim();
         if (query.isEmpty() || query.equals("начните*вводить*название")) {
             sendSearchUsage(p);
             return;
@@ -108,11 +111,11 @@ public final class AuctionCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         if (args.length >= 2 && args[0].equalsIgnoreCase("search")) {
-            String query = String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length));
+            String query = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
             if (query.isBlank()) return List.of("начните*вводить*название");
             int consumed = query.length() - args[args.length - 1].length();
             List<String> suggestions = new ObjectArrayList<>();
-            Set<String> added = new java.util.HashSet<>();
+            Set<String> added = new HashSet<>();
             for (MaterialSearchIndex.Match match : ItemUtils.getSearchIndex().find(query, 30)) {
                 String completion = match.name().substring(consumed);
                 if (added.add(completion)) suggestions.add(completion);
@@ -151,7 +154,8 @@ public final class AuctionCommand implements CommandExecutor, TabCompleter {
 
             String trans = ItemUtils.getTranslation(m);
             if (trans != null && !trans.isEmpty()) {
-                toMat.put(trans.toLowerCase(), matName);
+                String plainName = PlainTextComponentSerializer.plainText().serialize(TextUtils.component(trans));
+                toMat.put(plainName.toLowerCase(), matName);
             }
         }
     }

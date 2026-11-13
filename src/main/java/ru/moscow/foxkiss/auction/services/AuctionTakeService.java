@@ -31,7 +31,7 @@ public final class AuctionTakeService extends BaseAuctionService {
         String playerName = player.getName();
         long now = System.currentTimeMillis();
         scheduler.runAsync(() -> {
-            if (!repository.markAsProcessing(lotId, operationId, now)) {
+            if (repository.markAsProcessing(lotId, operationId, now)) {
                 scheduler.runSync(() -> finishWithMessage(player, configManager.getConfigValues().messages().noId(), callback));
                 return;
             }

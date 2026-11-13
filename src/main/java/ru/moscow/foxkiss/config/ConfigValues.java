@@ -68,8 +68,10 @@ public record ConfigValues(
             NavigationConfig navigation,
             ButtonConfig exitButton,
             Map<Integer, GlassPane> mainGlass,
-            Map<Integer, GlassPane> expiredGlass
-    ) {}
+            Map<Integer, GlassPane> expiredGlass,
+            String materialCardName,
+            List<String> materialCardLore
+    ) { }
 
     public record TitlesConfig(
             String main,
@@ -156,13 +158,13 @@ public record ConfigValues(
             String unselectedPrefix,
             String footer,
             List<CategoryEntry> entries
-    ) {
-        public CategoryMenuConfig(Material material, String name, String selectedPrefix, String unselectedPrefix, String footer) {
-            this(material, name, selectedPrefix, unselectedPrefix, footer, null);
-        }
-    }
+    ) { }
 
-    public record CategoryEntry(String id, String selected, String unselected) {}
+    public record CategoryEntry(
+            String id,
+            String selected,
+            String unselected
+    ) {}
 
     public record GlassPane(
             Material material,

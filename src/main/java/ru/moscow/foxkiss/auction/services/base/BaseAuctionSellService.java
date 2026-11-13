@@ -7,6 +7,7 @@ import ru.moscow.foxkiss.FMAuction;
 import ru.moscow.foxkiss.auction.AuctionCurrency;
 import ru.moscow.foxkiss.auction.AuctionRepository;
 import ru.moscow.foxkiss.auction.services.AuctionTransactionService;
+import ru.moscow.foxkiss.auction.services.AuctionValidationService;
 import ru.moscow.foxkiss.config.ConfigValues;
 import ru.moscow.foxkiss.config.interfaces.IConfigManager;
 import ru.moscow.foxkiss.scheduler.SchedulerService;
@@ -159,6 +160,37 @@ public abstract class BaseAuctionSellService extends BaseAuctionService {
         } finally {
             transactionService.endListing(player);
         }
+    }
+
+    protected boolean validateListingPrice(Player player, AuctionCurrency currency, double price, AuctionValidationService validation) {
+        ConfigValues values = config();
+        ConfigValues.ConfigMessages messages = values.messages();
+
+        if (validation.isEconomyUnavailable(currency)) {
+            sendMessage(player, messages.economyUnavailable());
+            return false;
+        }
+
+        if (validation.isInvalidPrice(price, currency)) {
+            sendMessage(player, messages.noPrice());
+            return false;
+        }
+
+        boolean donate = currency == AuctionCurrency.PLAYER_POINTS;
+
+        if (!validation.isPriceOutOfRange(price, currency, donate)) {
+            return true;
+        }
+
+        double min = validation.getMinPrice(currency, donate);
+        double max = validation.getMaxPrice(currency, donate);
+        String symbol = currency.symbol(values);
+
+        String message = price < min ? messages.priceTooLow().replace("{min_price}", String.valueOf((long) min)) : messages.priceTooHigh().replace("{max_price}", String.valueOf((long) max));
+
+        sendMessage(player, message.replace("{symbol_value}", symbol));
+
+        return false;
     }
 
     private boolean reservationMatches(Player player, Map<Integer, ItemStack> reserved) {

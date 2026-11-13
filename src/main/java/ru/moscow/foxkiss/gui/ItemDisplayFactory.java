@@ -3,6 +3,7 @@ package ru.moscow.foxkiss.gui;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
+import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemFlag;
@@ -21,11 +22,14 @@ import ru.moscow.foxkiss.utils.PriceFormatter;
 import ru.moscow.foxkiss.utils.TextUtils;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 public final class ItemDisplayFactory {
     private final IConfigManager configManager;
 
     private final Object2ObjectOpenHashMap<LotDisplayKey, ItemStack> lotDisplayCache = new Object2ObjectOpenHashMap<>();
+    private record MaterialCardKey(String variant, int lots) {}
+    private final Map<MaterialCardKey, ItemStack> materialCardCache = new HashMap<>();
     private final Object2ObjectOpenHashMap<String, ItemStack> navCache = new Object2ObjectOpenHashMap<>();
     private final Object2ObjectOpenHashMap<String, ItemStack> sortButtonCache = new Object2ObjectOpenHashMap<>();
     private final Object2ObjectOpenHashMap<String, ItemStack> categoryButtonCache = new Object2ObjectOpenHashMap<>();
@@ -292,11 +296,11 @@ public final class ItemDisplayFactory {
         return item;
     }
 
-    private static ItemStack cached(Map<String, ItemStack> cache, String key, int limit, java.util.function.Supplier<ItemStack> build) {
+    private static <K> ItemStack cached(Map<K, ItemStack> cache, K key, int limit, Supplier<ItemStack> build) {
         ItemStack item = cache.get(key);
         if (item == null) {
             if (cache.size() >= limit) {
-                Iterator<String> keys = cache.keySet().iterator();
+                Iterator<K> keys = cache.keySet().iterator();
                 keys.next(); keys.remove();
             }
             item = build.get();
@@ -306,9 +310,32 @@ public final class ItemDisplayFactory {
     }
 
     public void clearCache() {
+        materialCardCache.clear();
         lotDisplayCache.clear();
         navCache.clear();
         sortButtonCache.clear();
         categoryButtonCache.clear();
+    }
+
+    public ItemStack createMaterialCard(ItemStack source, String groupKey, int lots) {
+        return cached(materialCardCache, new MaterialCardKey(groupKey, lots), 512, () -> buildMaterialCard(source, lots));
+    }
+
+    private ItemStack buildMaterialCard(ItemStack source, int lots) {
+        ConfigValues.AuctionGuiConfig config = configManager.getConfigValues().moneyGui();
+        ItemStack icon = source.clone();
+        icon.setAmount(1);
+        ItemMeta meta = icon.getItemMeta();
+        Component name = meta.hasDisplayName() ? meta.displayName() : TextUtils.component(ItemUtils.getItemDisplayName(icon));
+        TextReplacementConfig nameReplacement = TextReplacementConfig.builder().matchLiteral("{name}").replacement(name).build();
+        String lotCount = Integer.toString(lots);
+        meta.displayName(TextUtils.component(config.materialCardName().replace("{lots}", lotCount)).replaceText(nameReplacement));
+        List<Component> lore = new ArrayList<>(config.materialCardLore().size());
+        for (String line : config.materialCardLore()) {
+            lore.add(TextUtils.component(line.replace("{lots}", lotCount)).replaceText(nameReplacement));
+        }
+        meta.lore(lore);
+        icon.setItemMeta(meta);
+        return icon;
     }
 }

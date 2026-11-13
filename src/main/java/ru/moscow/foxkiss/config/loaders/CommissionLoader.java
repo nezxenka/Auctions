@@ -9,9 +9,9 @@ public final class CommissionLoader {
 
     public ConfigValues.CommissionConfig load(ConfigurationSection section) {
         boolean enabled = section.getBoolean("enabled");
-        ConfigurationSection a = section.getConfigurationSection("sell");
-        ConfigurationSection b = section.getConfigurationSection("sell-inventory");
-        return new ConfigValues.CommissionConfig(enabled, loadRule(a), loadRule(b));
+        ConfigurationSection sell = section.getConfigurationSection("sell");
+        ConfigurationSection sellInventory = section.getConfigurationSection("sell-inventory");
+        return new ConfigValues.CommissionConfig(enabled, loadRule(sell), loadRule(sellInventory));
     }
 
     private ConfigValues.CommissionRule loadRule(ConfigurationSection section) {

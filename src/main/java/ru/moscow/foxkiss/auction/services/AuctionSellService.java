@@ -24,34 +24,14 @@ public final class AuctionSellService extends BaseAuctionSellService {
     }
 
     public void sell(Player player, AuctionCurrency currency, double price) {
-        if (validationService.isEconomyAvailable(currency)) {
-            sendMessage(player, configManager.getConfigValues().messages().economyUnavailable());
-            return;
-        }
-
-        if (validationService.isValidPrice(price, currency)) {
-            sendMessage(player, configManager.getConfigValues().messages().noPrice());
-            return;
-        }
-
-        boolean isDonate = currency == AuctionCurrency.PLAYER_POINTS;
-        if (validationService.isPriceInRange(price, currency, isDonate)) {
-            String symbol = currency.symbol(configManager.getConfigValues());
-            double min = validationService.getMinPrice(currency, isDonate);
-            double max = validationService.getMaxPrice(currency, isDonate);
-            String msg;
-            if (price < min) {
-                msg = configManager.getConfigValues().messages().priceTooLow().replace("{min_price}", String.valueOf((long) min)).replace("{symbol_value}", symbol);
-            } else {
-                msg = configManager.getConfigValues().messages().priceTooHigh().replace("{max_price}", String.valueOf((long) max)).replace("{symbol_value}", symbol);
-            }
-            sendMessage(player, msg);
+        if (!validateListingPrice(player, currency, price, validationService)) {
             return;
         }
 
         ItemStack hand = player.getInventory().getItemInMainHand();
+
         if (!validationService.isSellableItem(hand)) {
-            sendMessage(player, configManager.getConfigValues().messages().air());
+            sendMessage(player, config().messages().air());
             return;
         }
 
@@ -59,9 +39,18 @@ public final class AuctionSellService extends BaseAuctionSellService {
         String playerName = player.getName();
         ItemStack soldItem = hand.clone();
 
-        submitListing(player, currency, price, config().commission().sell(),
+        submitListing(
+                player,
+                currency,
+                price,
+                config().commission().sell(),
                 Map.of(player.getInventory().getHeldItemSlot(), soldItem),
-                () -> repository.countActiveBySellerSince(playerName, currency, 0) >= limit,
-                () -> repository.createWithinLimit(playerName, currency, soldItem, price, limit));
+                () -> repository.countActiveBySellerSince(
+                        playerName, currency, 0
+                ) >= limit,
+                () -> repository.createWithinLimit(
+                        playerName, currency, soldItem, price, limit
+                )
+        );
     }
 }

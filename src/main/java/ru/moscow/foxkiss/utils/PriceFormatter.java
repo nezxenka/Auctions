@@ -1,36 +1,39 @@
 package ru.moscow.foxkiss.utils;
 
+import ru.moscow.foxkiss.auction.AuctionCurrency;
+
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 
 public final class PriceFormatter {
 
-    private static final DecimalFormat formatDecimals;
-    private static final DecimalFormat formatWithoutDecimals;
+    private static final DecimalFormat DECIMALS;
+    private static final DecimalFormat INTEGERS;
 
     static {
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
         symbols.setGroupingSeparator('.');
         symbols.setDecimalSeparator('.');
 
-        formatDecimals = new DecimalFormat("#,##0.00", symbols);
-        formatDecimals.setGroupingUsed(true);
-
-        formatWithoutDecimals = new DecimalFormat("#,##0", symbols);
-        formatWithoutDecimals.setGroupingUsed(true);
+        DECIMALS = new DecimalFormat("#,##0.00", symbols);
+        INTEGERS = new DecimalFormat("#,##0", symbols);
     }
 
     public static String format(double amount) {
-        if (amount < 1_000) {
-            return formatDecimals.format(amount);
+        DecimalFormat formatter = amount < 1_000 ? DECIMALS : INTEGERS;
+
+        synchronized (formatter) {
+            return formatter.format(amount);
         }
-        return formatWithoutDecimals.format(amount);
     }
 
-    public static String format(double amount, ru.moscow.foxkiss.auction.AuctionCurrency currency) {
+    public static String format(double amount, AuctionCurrency currency) {
         if (currency != null && currency.isIntegerOnly()) {
-            return formatWithoutDecimals.format(Math.round(amount));
+            synchronized (INTEGERS) {
+                return INTEGERS.format(Math.round(amount));
+            }
         }
+
         return format(amount);
     }
 }

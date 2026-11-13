@@ -4,14 +4,33 @@ package ru.moscow.foxkiss.database.h2.impl;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
-
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 import java.util.*;
 
 import ru.moscow.foxkiss.auction.*;
 
 final class H2ItemCodec {
+    static String groupKey(ItemStack item, AuctionLotType type, String inventoryData) {
+        ItemStack normalized = item.clone();
+        normalized.setAmount(1);
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.update(normalized.serializeAsBytes());
+            digest.update((byte) 0);
+            digest.update(type.name().getBytes(StandardCharsets.UTF_8));
+            if (type == AuctionLotType.INVENTORY) {
+                digest.update((byte) 0);
+                digest.update(inventoryData.getBytes(StandardCharsets.UTF_8));
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Недоступен SHA-256 для группировки лотов", e);
+        }
+    }
     static AuctionItem readItem(ResultSet rs) throws Exception {
         ItemStack item = deserialize(rs.getString("item"));
         int amount = rs.getInt("amount");

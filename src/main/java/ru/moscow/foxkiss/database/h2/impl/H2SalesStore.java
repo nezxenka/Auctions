@@ -23,25 +23,8 @@ public final class H2SalesStore {
         this.storage = storage;
     }
 
-    public void recordSale(String sellerName, String buyerName, AuctionCurrency currency, String itemType, int amount, double price) {
-        try (Connection conn = storage.open();
-             PreparedStatement ps = conn.prepareStatement("INSERT INTO sales_history(seller_name,buyer_name,currency,item_type,amount,price,sold_at) VALUES(?,?,?,?,?,?,?)")) {
-            ps.setString(1, sellerName);
-            ps.setString(2, buyerName);
-            ps.setString(3, currency.name());
-            ps.setString(4, itemType);
-            ps.setInt(5, amount);
-            ps.setBigDecimal(6, BigDecimal.valueOf(price).setScale(2, RoundingMode.HALF_UP));
-            ps.setLong(7, System.currentTimeMillis());
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            storage.plugin.getLogger().log(Level.WARNING, "Ошибка записи продажи", e);
-        }
-    }
-
     void recordSale(Connection conn, String operationId, AuctionItem lot, String buyerName, ItemStack purchased, int amount, double price) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO sales_history(seller_name,buyer_name,currency,item_type,amount,price,sold_at,item,operation_id) " + "SELECT ?,?,?,?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM sales_history WHERE operation_id=?)")) {
+        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO sales_history(seller_name,buyer_name,currency,item_type,amount,price,sold_at,item,operation_id) " + "SELECT ?,?,?,?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM sales_history WHERE operation_id=?)")) {
             ps.setString(1, lot.sellerName());
             ps.setString(2, buyerName);
             ps.setString(3, lot.currency().name());
@@ -73,9 +56,7 @@ public final class H2SalesStore {
             int pages = (int) Math.max(1L, (total + (long) pageSize - 1) / pageSize);
             int page = Math.max(0, Math.min(requestedPage, pages - 1));
             List<SaleHistoryEntry> entries = new ArrayList<>();
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT id,seller_name,buyer_name,item_type,amount,price,sold_at,item FROM sales_history "
-                            + "WHERE seller_name=? AND currency=? ORDER BY sold_at DESC,id DESC LIMIT ? OFFSET ?")) {
+            try (PreparedStatement ps = conn.prepareStatement("SELECT id,seller_name,buyer_name,item_type,amount,price,sold_at,item FROM sales_history " + "WHERE seller_name=? AND currency=? ORDER BY sold_at DESC,id DESC LIMIT ? OFFSET ?")) {
                 ps.setString(1, sellerName);
                 ps.setString(2, currency.name());
                 ps.setInt(3, pageSize);
@@ -91,9 +72,7 @@ public final class H2SalesStore {
                                 storage.plugin.getLogger().log(Level.WARNING, "Ошибка чтения предмета истории #" + rs.getLong("id"), e);
                             }
                         }
-                        entries.add(new SaleHistoryEntry(rs.getLong("id"), rs.getString("seller_name"),
-                                rs.getString("buyer_name"), currency, rs.getString("item_type"), item,
-                                rs.getInt("amount"), rs.getBigDecimal("price").doubleValue(), rs.getLong("sold_at")));
+                        entries.add(new SaleHistoryEntry(rs.getLong("id"), rs.getString("seller_name"), rs.getString("buyer_name"), currency, rs.getString("item_type"), item, rs.getInt("amount"), rs.getBigDecimal("price").doubleValue(), rs.getLong("sold_at")));
                     }
                 }
             }
@@ -109,9 +88,17 @@ public final class H2SalesStore {
     }
 
     public List<TopSeller> getTopSellers(AuctionCurrency currency, int limit) {
+        return loadTopSellers(currency, limit, "sold");
+    }
+
+    public List<TopSeller> getTopSellersByRevenue(AuctionCurrency currency, int limit) {
+        return loadTopSellers(currency, limit, "earned");
+    }
+
+    private List<TopSeller> loadTopSellers(AuctionCurrency currency, int limit, String orderBy) {
         ObjectList<TopSeller> sellers = new ObjectArrayList<>();
         try (Connection conn = storage.open();
-             PreparedStatement ps = conn.prepareStatement("SELECT seller_name, COUNT(*) AS sold, COALESCE(SUM(price),0) AS earned " + "FROM sales_history WHERE currency=? GROUP BY seller_name ORDER BY sold DESC LIMIT ?")) {
+             PreparedStatement ps = conn.prepareStatement("SELECT seller_name, COUNT(*) AS sold, COALESCE(SUM(price),0) AS earned " + "FROM sales_history WHERE currency=? GROUP BY seller_name ORDER BY " + orderBy + " DESC, seller_name ASC LIMIT ?")) {
             ps.setString(1, currency.name());
             ps.setInt(2, limit);
             try (ResultSet rs = ps.executeQuery()) {

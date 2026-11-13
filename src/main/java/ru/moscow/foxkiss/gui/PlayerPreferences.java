@@ -29,4 +29,9 @@ public final class PlayerPreferences {
     public void setCategory(UUID uuid, AuctionCurrency currency, String category) {
         categories.computeIfAbsent(uuid, k -> new EnumMap<>(AuctionCurrency.class)).put(currency, category);
     }
+
+    public void remove(UUID uuid) {
+        sorts.remove(uuid);
+        categories.remove(uuid);
+    }
 }

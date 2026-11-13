@@ -26,16 +26,8 @@ public final class H2ListingStore {
         for (int i = 0; i < listingLocks.length; i++) listingLocks[i] = new ReentrantLock();
     }
 
-    public long create(String sellerName, AuctionCurrency currency, ItemStack itemStack, double price) {
-        return createListing(sellerName, currency, itemStack, null, price, null);
-    }
-
     public long createWithinLimit(String sellerName, AuctionCurrency currency, ItemStack itemStack, double price, int limit) {
         return createListing(sellerName, currency, itemStack, null, price, limit);
-    }
-
-    public long createInventory(String sellerName, AuctionCurrency currency, ItemStack displayItem, List<ItemStack> contents, double price) {
-        return createListing(sellerName, currency, displayItem, contents, price, null);
     }
 
     public long createInventoryWithinLimit(String sellerName, AuctionCurrency currency, ItemStack displayItem, List<ItemStack> contents, double price, int limit) {
@@ -58,15 +50,10 @@ public final class H2ListingStore {
                         return richi_limit;
                     }
                     long id;
-                    try (PreparedStatement ps = conn.prepareStatement(
-                            "INSERT INTO auction_items(seller_name,currency,item,price,created_at,status,material,amount,price_per_item,lot_type,inventory_data) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                            Statement.RETURN_GENERATED_KEYS)) {
+                    try (PreparedStatement ps = conn.prepareStatement("INSERT INTO auction_items(seller_name,currency,item,price,created_at,status,material,amount,price_per_item,lot_type,inventory_data,group_key) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS)) {
                         int amount = contents == null ? item.getAmount() : Math.max(1, item.getAmount());
                         BigDecimal priceBd = BigDecimal.valueOf(price).setScale(2, RoundingMode.HALF_UP);
-                        BigDecimal pricePerItemBd = amount > 0
-                                ? priceBd.divide(BigDecimal.valueOf(amount), 2, RoundingMode.HALF_UP)
-                                : priceBd;
-
+                        BigDecimal pricePerItemBd = amount > 0 ? priceBd.divide(BigDecimal.valueOf(amount), 2, RoundingMode.HALF_UP) : priceBd;
                         ps.setString(1, sellerName);
                         ps.setString(2, currency.name());
                         ps.setString(3, serializedItem);
@@ -78,6 +65,7 @@ public final class H2ListingStore {
                         ps.setBigDecimal(9, pricePerItemBd);
                         ps.setString(10, contents == null ? AuctionLotType.ITEM.name() : AuctionLotType.INVENTORY.name());
                         ps.setString(11, serializedInventory);
+                        ps.setString(12, groupKey(item, contents == null ? AuctionLotType.ITEM : AuctionLotType.INVENTORY, serializedInventory));
                         ps.executeUpdate();
                         try (ResultSet keys = ps.getGeneratedKeys()) {
                             if (!keys.next() || (id = keys.getLong(1)) <= 0) {
@@ -135,17 +123,6 @@ public final class H2ListingStore {
         }
     }
 
-    public boolean delete(long id) {
-        try (Connection conn = storage.open();
-             PreparedStatement ps = conn.prepareStatement("DELETE FROM auction_items WHERE id=?")) {
-            ps.setLong(1, id);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            storage.plugin.getLogger().log(Level.WARNING, "Ошибка удаления лота", e);
-            return false;
-        }
-    }
-
     public boolean markAsProcessing(long id, String operationId, long startedAt) {
         try (Connection conn = storage.open();
              PreparedStatement ps = conn.prepareStatement("UPDATE auction_items SET status=?, operation_id=?, processing_started_at=? WHERE id=? AND status=?")) {
@@ -163,10 +140,6 @@ public final class H2ListingStore {
         }
     }
 
-    public boolean markAsSelling(long id) {
-        return markAsProcessing(id, null, System.currentTimeMillis());
-    }
-
     public void cancelProcessing(long id, String operationId) {
         if (operationId != null) storage.liveOperations.remove(operationId);
         try (Connection conn = storage.open();
@@ -182,27 +155,6 @@ public final class H2ListingStore {
         }
     }
 
-    public void restoreStatus(long id) {
-        cancelProcessing(id, null);
-    }
-
-    public List<String> getUniqueMaterialNames(AuctionCurrency currency) {
-        ObjectList<String> names = new ObjectArrayList<>();
-        try (Connection conn = storage.open();
-             PreparedStatement ps = conn.prepareStatement("SELECT DISTINCT material FROM auction_items WHERE currency=? AND status=? AND material IS NOT NULL")) {
-            ps.setString(1, currency.name());
-            ps.setInt(2, active);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    names.add(rs.getString("material"));
-                }
-            }
-        } catch (SQLException e) {
-            storage.plugin.getLogger().log(Level.WARNING, "Ошибка получения уникальных материалов", e);
-        }
-        return names;
-    }
-
     public int countActiveBySellerSince(String sellerName, AuctionCurrency currency, long since) {
         try (Connection conn = storage.open()) {
             return countActiveBySellerSince(conn, sellerName, currency, since);
@@ -213,8 +165,7 @@ public final class H2ListingStore {
     }
 
     private int countActiveBySellerSince(Connection conn, String sellerName, AuctionCurrency currency, long since) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT COUNT(*) FROM auction_items WHERE seller_name=? AND currency=? AND created_at>? AND status IN (?,?)")) {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM auction_items WHERE seller_name=? AND currency=? AND created_at>? AND status IN (?,?)")) {
             ps.setString(1, sellerName);
             ps.setString(2, currency.name());
             ps.setLong(3, since);

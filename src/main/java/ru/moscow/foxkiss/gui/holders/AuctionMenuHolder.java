@@ -1,5 +1,13 @@
 package ru.moscow.foxkiss.gui.holders;
 
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2BooleanMap;
+import it.unimi.dsi.fastutil.ints.Int2BooleanOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2LongMap;
+import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.inventory.Inventory;
@@ -11,9 +19,7 @@ import ru.moscow.foxkiss.gui.AuctionViewType;
 import ru.moscow.foxkiss.gui.actions.Action;
 import ru.moscow.foxkiss.gui.holders.records.LotSnapshot;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Getter
@@ -38,11 +44,15 @@ public abstract class AuctionMenuHolder implements InventoryHolder {
     private int renderedExpiredCount = -1;
     private String renderedCounterPage;
 
-    protected final Map<Integer, Long> lotsBySlot = new HashMap<>();
-    protected final Map<Integer, Integer> lotsAmountBySlot = new HashMap<>();
-    protected final Map<Integer, Boolean> inventoryLotBySlot = new HashMap<>();
-    protected final Map<Integer, List<Action>> actionsBySlot = new HashMap<>();
-    protected final Map<Integer, LotSnapshot> lotSnapshots = new HashMap<>();
+    protected final Int2LongMap lotsBySlot = new Int2LongOpenHashMap();
+    protected final Int2IntMap lotsAmountBySlot = new Int2IntOpenHashMap();
+    protected final Int2BooleanMap inventoryLotBySlot = new Int2BooleanOpenHashMap();
+    protected final Int2ObjectMap<List<Action>> actionsBySlot = new Int2ObjectOpenHashMap<>();
+    protected final Int2ObjectMap<LotSnapshot> lotSnapshots = new Int2ObjectOpenHashMap<>();
+    private final Int2ObjectMap<String> materialGroups = new Int2ObjectOpenHashMap<>();
+    private final Int2IntMap materialGroupCounts = new Int2IntOpenHashMap();
+    private String renderedMaterialCardName;
+    private List<String> renderedMaterialCardLore;
 
     protected int totalPages = 1;
     private long requestVersion = 0;
@@ -68,7 +78,7 @@ public abstract class AuctionMenuHolder implements InventoryHolder {
     }
 
     public boolean isInventoryLot(int slot) {
-        return Boolean.TRUE.equals(inventoryLotBySlot.get(slot));
+        return inventoryLotBySlot.get(slot);
     }
 
     public void addActions(int slot, List<Action> actions) {
@@ -81,11 +91,11 @@ public abstract class AuctionMenuHolder implements InventoryHolder {
 
 
     public Long getLot(int slot) {
-        return lotsBySlot.get(slot);
+        return lotsBySlot.isEmpty() || !lotsBySlot.containsKey(slot) ? null : lotsBySlot.get(slot);
     }
 
     public Integer getLotAmount(int slot) {
-        return lotsAmountBySlot.get(slot);
+        return lotsAmountBySlot.isEmpty() || !lotsAmountBySlot.containsKey(slot) ? null : lotsAmountBySlot.get(slot);
     }
 
     @Override

@@ -8,60 +8,60 @@ import ru.moscow.foxkiss.utils.TextUtils;
 public record MessagesLoader(String prefix) {
 
     public ConfigValues.ConfigMessages load(FileConfiguration config) {
-        ConfigurationSection a = config.getConfigurationSection("messages");
-        ConfigurationSection b = a.getConfigurationSection("admin");
-        ConfigurationSection c = a.getConfigurationSection("errors");
-        ConfigurationSection d = a.getConfigurationSection("buy");
-        ConfigurationSection e = a.getConfigurationSection("expired");
-        ConfigurationSection f = a.getConfigurationSection("selling");
-        ConfigurationSection g = config.getConfigurationSection("commands");
-        ConfigurationSection h = g.getConfigurationSection("sell");
-        ConfigurationSection i = config.getConfigurationSection("auction");
-        ConfigurationSection j = i.getConfigurationSection("errors");
+        ConfigurationSection messages = config.getConfigurationSection("messages");
+        ConfigurationSection admin = messages.getConfigurationSection("admin");
+        ConfigurationSection errors = messages.getConfigurationSection("errors");
+        ConfigurationSection buy = messages.getConfigurationSection("buy");
+        ConfigurationSection expired = messages.getConfigurationSection("expired");
+        ConfigurationSection selling = messages.getConfigurationSection("selling");
+        ConfigurationSection commands = config.getConfigurationSection("commands");
+        ConfigurationSection sell = commands.getConfigurationSection("sell");
+        ConfigurationSection auction = config.getConfigurationSection("auction");
+        ConfigurationSection auctionErrors = auction.getConfigurationSection("errors");
 
-        ConfigurationSection k = config.getConfigurationSection("search");
-        ConfigurationSection l = a.getConfigurationSection("profile");
+        ConfigurationSection search = config.getConfigurationSection("search");
+        ConfigurationSection profile = messages.getConfigurationSection("profile");
 
         return new ConfigValues.ConfigMessages(
-                msg(b.getString("reload")),
-                msg(b.getString("unknown-subcommand")),
-                msg(b.getString("error-reload")),
-                msg(b.getString("no-permission")),
-                msg(c.getString("no-name")),
-                msg(c.getString("no-id")),
-                msg(h.getString("non-price")),
-                msg(c.getString("no-own")),
-                msg(j.getString("economy-unavailable")),
-                msg(h.getString("air")),
-                msg(h.getString("success")),
-                msg(h.getString("price-too-low")),
-                msg(h.getString("price-too-high")),
-                msg(h.getString("limit-reached")),
-                msg(h.getString("database-error")),
-                msg(String.join("\n", k.getStringList("enter-player-name"))),
-                msg(d.getString("buy-seller")),
-                msg(d.getString("otmena")),
-                msg(d.getString("yspex")),
-                msg(d.getString("nomoney")),
-                msg(d.getString("quantity-exceeded")),
-                msg(e.getString("take")),
-                msg(f.getString("take")),
-                msg(a.getString("cooldown")),
-                msg(a.getString("inventory-full")),
-                msg(a.getString("cooldown-item")),
-                msg(h.getString("inventory-min-items")),
-                msg(h.getString("commission-charged")),
-                msg(h.getString("commission-not-enough")),
-                msg(d.getString("pending-items-empty")),
-                msg(d.getString("pending-items-received")),
-                msg(d.getString("pending-items-remaining")),
-                msg(d.getString("pending-items-saved")),
-                msg(d.getString("pending-items-auto-received")),
-                msg(l.getString("discord-set")),
-                msg(l.getString("discord-cleared")),
-                msg(l.getString("store-set")),
-                msg(l.getString("store-cleared")),
-                msg(l.getString("too-long"))
+                msg(admin.getString("reload")),
+                msg(admin.getString("unknown-subcommand")),
+                msg(admin.getString("error-reload")),
+                msg(admin.getString("no-permission")),
+                msg(errors.getString("no-name")),
+                msg(errors.getString("no-id")),
+                msg(sell.getString("non-price")),
+                msg(errors.getString("no-own")),
+                msg(auctionErrors.getString("economy-unavailable")),
+                msg(sell.getString("air")),
+                msg(sell.getString("success")),
+                msg(sell.getString("price-too-low")),
+                msg(sell.getString("price-too-high")),
+                msg(sell.getString("limit-reached")),
+                msg(sell.getString("database-error")),
+                msg(String.join("\n", search.getStringList("enter-player-name"))),
+                msg(buy.getString("buy-seller")),
+                msg(buy.getString("otmena")),
+                msg(buy.getString("yspex")),
+                msg(buy.getString("nomoney")),
+                msg(buy.getString("quantity-exceeded")),
+                msg(expired.getString("take")),
+                msg(selling.getString("take")),
+                msg(messages.getString("cooldown")),
+                msg(messages.getString("inventory-full")),
+                msg(messages.getString("cooldown-item")),
+                msg(sell.getString("inventory-min-items")),
+                msg(sell.getString("commission-charged")),
+                msg(sell.getString("commission-not-enough")),
+                msg(buy.getString("pending-items-empty")),
+                msg(buy.getString("pending-items-received")),
+                msg(buy.getString("pending-items-remaining")),
+                msg(buy.getString("pending-items-saved")),
+                msg(buy.getString("pending-items-auto-received")),
+                msg(profile.getString("discord-set")),
+                msg(profile.getString("discord-cleared")),
+                msg(profile.getString("store-set")),
+                msg(profile.getString("store-cleared")),
+                msg(profile.getString("too-long"))
         );
     }
 

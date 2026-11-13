@@ -12,10 +12,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.plugin.java.JavaPlugin;
-import ru.moscow.foxkiss.FMAuction;
 
 import java.io.File;
+import java.util.logging.Logger;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -25,7 +24,7 @@ public final class ItemUtils {
     private static final Map<String, ItemStack> cacheSkull = new HashMap<>();
     private static final Map<String, String> perevod = new HashMap<>();
     @Getter
-    private static volatile MaterialSearchIndex searchIndex = createSearchIndex(Map.of());
+    private static MaterialSearchIndex searchIndex = createSearchIndex(Map.of());
 
     private static MaterialSearchIndex createSearchIndex(Map<String, String> translations) {
         List<String> ids = new ArrayList<>();
@@ -34,6 +33,7 @@ public final class ItemUtils {
         }
         return new MaterialSearchIndex(translations, ids);
     }
+
 
     public static ItemStack named(Material material, String name, List<String> lore, Integer customModelData) {
         ItemStack item = new ItemStack(material);
@@ -45,8 +45,7 @@ public final class ItemUtils {
         }
 
         if (customModelData != null) {
-            item.setData(DataComponentTypes.CUSTOM_MODEL_DATA,
-                    CustomModelData.customModelData().addFloat(customModelData.floatValue()).build());
+            item.setData(DataComponentTypes.CUSTOM_MODEL_DATA, CustomModelData.customModelData().addFloat(customModelData.floatValue()).build());
         }
 
         if (lore != null && !lore.isEmpty()) {
@@ -94,20 +93,18 @@ public final class ItemUtils {
         return item.getType() != Material.AIR && item.getAmount() > 0;
     }
 
-    public static void loadTranslations(File itemsFile) {
+    public static void loadTranslations(File itemsFile, Logger logger) {
         perevod.clear();
-
-        FMAuction plugin = JavaPlugin.getPlugin(FMAuction.class);
 
         if (itemsFile == null || !itemsFile.exists()) {
             searchIndex = createSearchIndex(Map.of());
-            plugin.getLogger().warning("items.yml не найден, переводы не загружены.");
+            logger.warning("items.yml не найден, переводы не загружены.");
             return;
         }
         YamlConfiguration cfg = YamlConfiguration.loadConfiguration(itemsFile);
         for (String key : cfg.getKeys(false)) {
             if (Material.getMaterial(key) == null) {
-                plugin.getLogger().warning("Пропущен не поддерживаемый или не валидный материал: " + key);
+                logger.warning("Пропущен не поддерживаемый или не валидный материал: " + key);
                 continue;
             }
             perevod.put(key, cfg.getString(key));
@@ -118,7 +115,9 @@ public final class ItemUtils {
     public static String getItemDisplayName(ItemStack item) {
         Material material = item.getType();
         String materialName = material.name();
-        return perevod.getOrDefault(materialName, materialName.toLowerCase().replace('_', ' '));
+        String translated = perevod.get(materialName);
+
+        return translated != null ? translated : materialName.toLowerCase().replace('_', ' ');
     }
 
     public static String getTranslation(Material material) {

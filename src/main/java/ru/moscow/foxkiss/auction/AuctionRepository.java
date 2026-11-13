@@ -1,10 +1,14 @@
 package ru.moscow.foxkiss.auction;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import org.bukkit.inventory.ItemStack;
 import ru.moscow.foxkiss.economy.EconomyProvider;
 import ru.moscow.foxkiss.gui.AuctionViewType;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface AuctionRepository {
@@ -12,11 +16,7 @@ public interface AuctionRepository {
 
     void init();
 
-    long create(String sellerName, AuctionCurrency currency, ItemStack itemStack, double price);
-
     long createWithinLimit(String sellerName, AuctionCurrency currency, ItemStack itemStack, double price, int limit);
-
-    long createInventory(String sellerName, AuctionCurrency currency, ItemStack displayItem, List<ItemStack> contents, double price);
 
     long createInventoryWithinLimit(String sellerName, AuctionCurrency currency, ItemStack displayItem, List<ItemStack> contents, double price, int limit);
 
@@ -26,17 +26,16 @@ public interface AuctionRepository {
 
     MenuData loadMenuData(AuctionCurrency currency, String playerName, int maxDays, int page, int pageSize, AuctionSort sort, String category, String sellerFilter, String searchFilter, AuctionViewType viewType);
 
-    boolean delete(long id);
-
-    void recordSale(String sellerName, String buyerName, AuctionCurrency currency, String itemType, int amount, double price);
-
     SalesHistoryPage loadSalesHistory(String sellerName, AuctionCurrency currency, int page, int pageSize);
 
     List<TopSeller> getTopSellers(AuctionCurrency currency, int limit);
+    default List<TopSeller> getTopSellersByRevenue(AuctionCurrency currency, int limit) {
+        List<TopSeller> sellers = new ArrayList<>(getTopSellers(currency, Integer.MAX_VALUE));
+        sellers.sort(Comparator.comparingDouble(TopSeller::totalEarned).reversed().thenComparing(TopSeller::name));
+        return List.copyOf(sellers.subList(0, Math.min(limit, sellers.size())));
+    }
 
     PlayerStats getPlayerStats(String playerName, AuctionCurrency currency);
-
-    List<String> getUniqueMaterialNames(AuctionCurrency currency);
 
     PlayerProfile getPlayerProfile(String playerName);
 
@@ -44,11 +43,7 @@ public interface AuctionRepository {
 
     Optional<String> findProfileOwner(String value);
 
-    boolean markAsSelling(long id);
-
     boolean markAsProcessing(long id, String operationId, long startedAt);
-
-    void restoreStatus(long id);
 
     void cancelProcessing(long id, String operationId);
 
@@ -62,15 +57,7 @@ public interface AuctionRepository {
 
     TakeResult processTake(long lotId, String operationId, String playerName);
 
-    void confirmDelivery(long pendingDeliveryId, String operationId);
-
-    void removePendingDelivery(long pendingDeliveryId);
-
     List<PendingDelivery> getPendingDeliveries(String playerName);
-
-    List<ItemStack> getPendingInventoryItems(String playerName, AuctionCurrency currency);
-
-    boolean replacePendingInventoryItems(String playerName, AuctionCurrency currency, List<ItemStack> items);
 
     boolean completeInventoryDelivery(long pendingDeliveryId, String operationId, String playerName, AuctionCurrency currency, List<ItemStack> items);
 
@@ -81,10 +68,6 @@ public interface AuctionRepository {
     }
 
     void savePendingPayout(String playerName, AuctionCurrency currency, double amount);
-
-    List<PendingPayout> getPendingPayouts(String playerName);
-
-    void removePendingPayout(long payoutId);
 
     void processPendingPayouts(EconomyProvider economyProvider);
 
@@ -105,6 +88,6 @@ public interface AuctionRepository {
     record TopSeller(String name, int soldCount, double totalEarned) {}
     record DeliveryConfirmation(long id, AuctionCurrency currency, List<ItemStack> items) {}
     record PlayerStats(int soldCount, double totalEarned) {}
-    record MenuData(List<AuctionItem> items, int totalCount, int sellingCount, int expiredCount, java.util.Map<String, PlayerProfile> profiles) {}
+    record MenuData(List<AuctionItem> items, int totalCount, int sellingCount, int expiredCount, Map<String, PlayerProfile> profiles, Map<String, Integer> materialLots, Long2ObjectMap<String> itemGroups) { }
     record SalesHistoryPage(List<SaleHistoryEntry> entries, int totalCount, int page, int totalPages) {}
 }
