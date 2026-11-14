@@ -1,0 +1,64 @@
+# =============================================================================
+# Действия: [DECREASE_10], [DECREASE_1], [INCREASE_1], [INCREASE_10], [BUY]
+# =============================================================================
+
+title: "&r&0Покупка предмета"
+
+slot-amount: 13
+size-menu: 27
+
+# CustomModelData поддерживается для всех кнопок количества
+decrease-10:
+  actions:
+    - "[DECREASE_10]"
+  slots: [10, 1, 19]
+  material: RED_STAINED_GLASS_PANE
+  # custom-model-data: 4001
+  name: "&r&c(-) Уменьшить на 10 единиц"
+  lore:
+    - "&x&f&f&c&5&0&0▸ &fНажмите, чтобы &x&f&f&c&5&0&0уменьшить"
+
+decrease-1:
+  actions:
+    - "[DECREASE_1]"
+  slots: [11, 2, 20]
+  material: RED_STAINED_GLASS_PANE
+  name: "&r&c(-) Уменьшить на 1 единицу"
+  lore:
+    - "&x&f&f&c&5&0&0▸ &fНажмите, чтобы &x&f&f&c&5&0&0уменьшить"
+
+amount:
+  actions:
+    - "[BUY]"
+    - "[CLOSE]"
+  material: GUNPOWDER
+  name: "&r&eКоличество: &f{amount}"
+  lore:
+    - "&x&f&f&c&5&0&0▸ &fНажмите, чтобы &x&f&f&c&5&0&0купить"
+  slot: 13
+
+increase-1:
+  actions:
+    - "[INCREASE_1]"
+  slots: [15, 6, 24]
+  material: LIME_STAINED_GLASS_PANE
+  name: "&r&a(+) Увеличить на 1 единицу"
+  lore:
+    - "&x&f&f&c&5&0&0▸ &fНажмите, чтобы &x&f&f&c&5&0&0увеличить"
+
+increase-10:
+  actions:
+    - "[INCREASE_10]"
+  slots: [16, 7, 25]
+  material: LIME_STAINED_GLASS_PANE
+  name: "&r&a(+) Увеличить на 10 единиц"
+  lore:
+    - "&x&f&f&c&5&0&0▸ &fНажмите, чтобы &x&f&f&c&5&0&0увеличить"
+
+glass:
+  - glass-type: GRAY_STAINED_GLASS_PANE
+    display-name: "&8ᴡᴡᴡ.ꜰʀᴏsᴛᴍɪɴᴇ.ᴘᴡ"
+    slots: [3, 4, 5, 12, 14, 21, 22, 23]
+  - glass-type: BLACK_STAINED_GLASS_PANE
+    display-name: "&8ᴡᴡᴡ.ꜰʀᴏsᴛᴍɪɴᴇ.ᴘᴡ"
+    slots: [0, 9, 18, 8, 17, 26]

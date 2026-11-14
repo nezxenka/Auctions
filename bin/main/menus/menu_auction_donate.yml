@@ -1,0 +1,222 @@
+# =============================================================================
+# Доступные действия: [MAIN], [SELLING], [EXPIRED], [PREVIOUS], [NEXT],
+#   [REFRESH], [SORT], [CATEGORIES]
+# Для голов игроков используйте префикс basehead-<base64 текстуры> в material/item
+# =============================================================================
+
+menu-size: 54
+
+# Слоты, в которые выставляются лоты (0-35 для размера 54)
+active-slots:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+  - 17
+  - 18
+  - 19
+  - 20
+  - 21
+  - 22
+  - 23
+  - 24
+  - 25
+  - 26
+  - 27
+  - 28
+  - 29
+  - 30
+  - 31
+  - 32
+  - 33
+  - 34
+  - 35
+
+titles:
+  main: "&r&0Донат аукцион {page}"
+  selling: "&r&0Ваши товары"
+  expired: "&r&0Забытые товары"
+
+# Названия вариантов сортировки (ключ должен совпадать с enum AuctionSort)
+sorting:
+  NEWEST: "Сначала новые"
+  OLDEST: "Сначала старые"
+  EXPENSIVE: "Сначала дорогие"
+  CHEAP: "Сначала не дорогие"
+  EXPENSIVE_PER_ITEM: "Сначала дорогие за штуку"
+  CHEAP_PER_ITEM: "Сначала не дорогие за штуку"
+
+sort-menu:
+  material: HOPPER
+  name: "&x&f&f&c&5&0&0Сортировка"
+  selected-prefix: "&x&f&f&c&5&0&0♦ "
+  unselected-prefix: "&7♦ "
+  footer: "&fПеремещение: &x&f&f&c&5&0&0ЛКМ ↓ &f| &x&f&f&c&5&0&0ПКМ ↑"
+
+category-menu:
+  material: HOPPER
+  name: "&x&f&f&c&5&0&0Выберите категорию"
+  selected-prefix: "&x&f&f&c&5&0&0♦ "
+  unselected-prefix: "&7♦ "
+  footer: "&fПеремещение: &x&f&f&c&5&0&0ЛКМ ↓ &f| &x&f&f&c&5&0&0ПКМ ↑"
+
+# Кнопка "назад" в меню "Ваши товары" / "Забытые товары"
+exit-action:
+  actions:
+    - "[MAIN]"
+  material: BARRIER
+  slot: 45
+  name: "&x&f&f&c&5&0&0← Назад в аукцион"
+  lore:
+    - "&x&f&f&c&5&0&0▸ &fНажмите, чтобы &x&f&f&c&5&0&0вернуться"
+
+# Отображаемые названия категорий (ключ — id категории из config.yml)
+category-names:
+  all: "Все категории"
+  tools: "Инструменты"
+  weapons: "Оружие"
+  blocks: "Блоки"
+  mechanisms: "Механизмы"
+  alchemy: "Алхимия"
+  food: "Еда"
+  enchantments: "Зачарования"
+  armor: "Броня"
+  unique: "Уникальное"
+  spheres: "Шары"
+  treasures: "Драгоценности"
+  mob_loot: "Лут с мобов"
+  plants: "Растительность"
+
+# Настройки символов и лоров предметов
+symbol_value:
+  symbol: "&#A8E063Ⓡ"
+  item-lore:
+    lore:
+      - ""
+      - "&f&x&F&F&A&5&0&0╔ &fЦена: &6{price}{symbol_value} &7({pricePerItem} за шт.)"
+      - "&f&x&F&F&A&5&0&0╠ &fПродавец: &#74F271{seller}"
+      - "&f&x&F&F&A&5&0&0╠ &fИстекает через: &c{daysLeft} дн."
+      - "&f&x&F&F&A&5&0&0╚ &fВыставлен: &7{listedDate}"
+      - ""
+      - "&f&x&F&F&A&5&0&0▸ &x&f&f&c&5&0&0ЛКМ: &fкупить всё &7| &x&f&f&c&5&0&0ПКМ: &fкупить поштучно"
+      - ""
+  item-lore_one:
+    lore:
+      - ""
+      - "&f&x&F&F&A&5&0&0╔ &fЦена: &e{price}{symbol_value}"
+      - "&f&x&F&F&A&5&0&0╠ &fПродавец: &#74F271{seller}"
+      - "&f&x&F&F&A&5&0&0╠ &fИстекает через: &c{daysLeft} дн."
+      - "&f&x&F&F&A&5&0&0╚ &fВыставлен: &7{listedDate}"
+      - ""
+      - "&f&x&F&F&A&5&0&0▸ &fНажмите, чтобы &x&f&f&c&5&0&0купить всё"
+      - ""
+  item-lore_buy_one_item:
+    lore:
+      - ""
+      - "&f&x&F&F&A&5&0&0╔ &fЦена: &e{total_price}"
+      - "&f&x&F&F&A&5&0&0╠ &fПродавец: &#74F271{seller}"
+      - "&f&x&F&F&A&5&0&0╚ &fКоличество: &7{amount}"
+      - ""
+      - "&f&x&F&F&A&5&0&0▸ &fНажмите, чтобы &x&f&f&c&5&0&0приобрести"
+      - ""
+
+# Навигационные кнопки
+# CustomModelData поддерживается: добавьте строку custom-model-data: 123
+navigation:
+  previous:
+    actions:
+      - "[PREVIOUS]"
+    slot: 48
+    item: basehead-eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvODY5NzFkZDg4MWRiYWY0ZmQ2YmNhYTkzNjE0NDkzYzYxMmY4Njk2NDFlZDU5ZDFjOTM2M2EzNjY2YTVmYTYifX19
+    name: "&x&f&f&c&5&0&0Предыдущая страница"
+    lore:
+      - ""
+      - "&x&f&f&c&5&0&0▸ &fНажмите, чтобы &x&f&f&c&5&0&0пролистать"
+  refresh:
+    actions:
+      - "[REFRESH]"
+    slot: 49
+    item: basehead-eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTg4N2NjMzg4YzhkY2ZjZjFiYThhYTVjM2MxMDJkY2U5Y2Y3YjFiNjNlNzg2YjM0ZDRmMWMzNzk2ZDNlOWQ2MSJ9fX0=
+    name: "&x&f&f&c&5&0&0Обновить аукцион"
+    lore:
+      - ""
+      - "&x&f&f&c&5&0&0▸ &fНажмите, чтобы &x&f&f&c&5&0&0обновить"
+  next:
+    actions:
+      - "[NEXT]"
+    slot: 50
+    item: basehead-eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZjMyY2E2NjA1NmI3Mjg2M2U5OGY3ZjMyYmQ3ZDk0YzdhMGQ3OTZhZjY5MWM5YWMzYTkxMzYzMzEzNTIyODhmOSJ9fX0=
+    name: "&x&f&f&c&5&0&0Следующая страница"
+    lore:
+      - ""
+      - "&x&f&f&c&5&0&0▸ &fНажмите, чтобы &x&f&f&c&5&0&0пролистать"
+  selling:
+    actions:
+      - "[SELLING]"
+    slot: 45
+    item: basehead-eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNzNjY2I0ZGIyYzE5NjkyODM0M2U2YzFjNzlhMjdkNzM3ZTY1NWQwYzlmOTE2OWI3YTg4ZDE3NDQ1NzE0MTcifX19
+    name: "&x&f&f&c&5&0&0Ваши товары"
+    lore:
+      - ""
+      - " &x&F&F&A&5&0&0&l┃ &fВыставлено предметов: &e{count}"
+      - ""
+      - "&x&f&f&c&5&0&0▸ &fНажмите, чтобы &x&f&f&c&5&0&0открыть"
+  expired:
+    actions:
+      - "[EXPIRED]"
+    slot: 46
+    item: basehead-eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMmRhMTUwOGQ0N2VkNzNiNWM1MTVlM2I5MzkyOGI3MjhlNGJjNjI3ODU2OWE3OWIzNzIzYWI2OTcyY2UwNTM1NyJ9fX0=
+    name: "&x&f&f&c&5&0&0Забытые товары"
+    lore:
+      - ""
+      - " &x&F&F&A&5&0&0&l┃ &fНепроданных предметов: &e{count}"
+      - ""
+      - "&x&f&f&c&5&0&0▸ &fНажмите, чтобы &x&f&f&c&5&0&0открыть"
+  sort:
+    actions:
+      - "[SORT]"
+    slot: 52
+    item: HOPPER
+    name: "&x&f&f&c&5&0&0Сортировка предметов"
+    lore: []
+  categories:
+    actions:
+      - "[CATEGORIES]"
+    slot: 53
+    item: basehead-eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYzc1MDJjNmE2ODg1MmViZjEwODdhMmVkMmE2M2Y4ZDg1ODk4YTcwNDlkNTE0YjJjNjc1ZmEwOTE1YmY0NzI0NiJ9fX0=
+    name: "&x&f&f&c&5&0&0Категории предметов"
+    lore:
+      - "&r&eВсё подряд"
+      - "&r&7Инструменты"
+      - "&r&7Оружие"
+      - ""
+      - "&r&fЛКМ вниз | ПКМ вверх"
+
+glass-selling:
+  - glass-type: ORANGE_STAINED_GLASS_PANE
+    display-name: "&8ᴡᴡᴡ.ꜰʀᴏsᴛᴍɪɴᴇ.ᴘᴡ"
+    slots: [47, 51]
+  - glass-type: GRAY_STAINED_GLASS_PANE
+    display-name: "&8ᴡᴡᴡ.ꜰʀᴏsᴛᴍɪɴᴇ.ᴘᴡ"
+    slots: [36, 37, 38, 39, 40, 41, 42, 43, 44]
+
+glass-expired:
+  - glass-type: RED_STAINED_GLASS_PANE
+    display-name: "&8ᴡᴡᴡ.ꜰʀᴏsᴛᴍɪɴᴇ.ᴘᴡ"
+    slots: [46, 47, 51, 52, 53]
+  - glass-type: GRAY_STAINED_GLASS_PANE
+    display-name: "&8ᴡᴡᴡ.ꜰʀᴏsᴛᴍɪɴᴇ.ᴘᴡ"
+    slots: [36, 37, 38, 39, 40, 41, 42, 43, 44]

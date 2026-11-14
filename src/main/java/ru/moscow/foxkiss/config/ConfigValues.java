@@ -1,55 +1,44 @@
 package ru.moscow.foxkiss.config;
 
 import org.bukkit.Material;
-import ru.moscow.foxkiss.gui.enums.ActionType;
+import ru.moscow.foxkiss.auction.AuctionCurrency;
+import ru.moscow.foxkiss.gui.actions.Action;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public record ConfigValues(
-        String databaseHost,
-        int databasePort,
-        String databaseUsername,
-        String databasePassword,
-        String databaseName,
         String prefix,
         Map<String, Integer> vaultGroupLimits,
-        Map<String, Integer> vaultPriorityLimits,
         Map<String, Integer> playerPointsGroupLimits,
-        Map<String, Integer> playerPointsPriorityLimits,
         int maxAuctionStorageDays,
-        int menuSize,
-        List<Integer> auctionSlots,
         Map<String, Set<Material>> categories,
-        Set<String> allMaterialCategories,
-        Map<Integer, GlassPane> sellingGlassPanes,
-        Map<Integer, GlassPane> expiredGlassPanes,
-        Map<Integer, GlassPane> vaultGlassPanes,
-        Map<Integer, GlassPane> playerPointsGlassPanes,
         ConfigMessages messages,
-        Map<String, String> sortingNames,
-        Map<String, String> categoryNames,
-        String symbolVault,
-        String symbolPlayerPoints,
-        int exitSlot,
-        ButtonConfig exitButton,
-        GuiConfig guiConfig,
-        ConfirmMenuConfig confirmMenu,
-        Cooldowns cooldowns,
         PriceLimits priceLimits,
+        Cooldowns cooldowns,
         boolean bStatsEnabled,
-        boolean usePapi
+        boolean usePapi,
+        AuctionGuiConfig moneyGui,
+        AuctionGuiConfig donateGui,
+        ConfirmMenuConfig confirmMenu,
+        QuantityMenuConfig quantityMenu,
+        InventorySellingConfig inventorySelling,
+        CommissionConfig commission,
+        SalesHistoryConfig salesHistory,
+        ProfileMenuConfig profileMenu
 ) {
+
+    public AuctionGuiConfig gui(AuctionCurrency currency) {
+        return switch (currency) {
+            case VAULT -> moneyGui;
+            case PLAYER_POINTS -> donateGui;
+        };
+    }
 
     public record AuctionData(
             int maxStorageDays,
-            int menuSize,
-            List<Integer> auctionSlots,
-            Map<String, Set<Material>> categories,
-            Set<String> allCategories,
-            int exitSlot,
-            ConfigValues.ButtonConfig exitButton
+            Map<String, Set<Material>> categories
     ) {}
 
     public record PriceLimits(
@@ -66,21 +55,28 @@ public record ConfigValues(
             boolean cooldownEnabled
     ) {}
 
-    public record GuiConfig(
+    public record AuctionGuiConfig(
+            int menuSize,
+            List<Integer> auctionSlots,
             TitlesConfig titles,
+            Map<String, String> sortingNames,
+            Map<String, String> categoryNames,
+            String symbol,
             SortMenuConfig sortMenu,
-            ItemLoreConfig itemLore,
-            QuantityMenuConfig quantityMenu,
-            NavigationConfig navigation,
             CategoryMenuConfig categoryMenu,
-            ButtonConfig buttonConfig) {}
+            ItemLoreConfig itemLore,
+            NavigationConfig navigation,
+            ButtonConfig exitButton,
+            Map<Integer, GlassPane> mainGlass,
+            Map<Integer, GlassPane> expiredGlass,
+            String materialCardName,
+            List<String> materialCardLore
+    ) { }
 
     public record TitlesConfig(
             String main,
             String selling,
-            String expired,
-            String quantity,
-            String confirmBuy
+            String expired
     ) {}
 
     public record SortMenuConfig(
@@ -94,10 +90,17 @@ public record ConfigValues(
     public record ItemLoreConfig(
             List<String> lore,
             List<String> loreOne,
-            List<String> buyLore
+            List<String> buyLore,
+            List<String> discordLore,
+            List<String> discordLoreOne,
+            List<String> storeLore,
+            List<String> storeLoreOne,
+            List<String> discordStoreLore,
+            List<String> discordStoreLoreOne
     ) {}
 
     public record QuantityMenuConfig(
+            String title,
             int slotAmount,
             int sizeMenu,
             ButtonConfig decrease10,
@@ -113,7 +116,7 @@ public record ConfigValues(
             String name,
             List<String> lore,
             String skullTexture,
-            ActionType action,
+            List<Action> actions,
             List<Integer> slots,
             Integer customModelData
     ) {}
@@ -124,7 +127,7 @@ public record ConfigValues(
             List<String> lore,
             String skullTexture,
             List<Integer> slots,
-            ActionType action,
+            List<Action> actions,
             Integer customModelData
     ) {}
 
@@ -144,7 +147,7 @@ public record ConfigValues(
             String name,
             List<String> lore,
             String skullTexture,
-            ActionType action,
+            List<Action> actions,
             Integer customModelData
     ) {}
 
@@ -153,7 +156,14 @@ public record ConfigValues(
             String name,
             String selectedPrefix,
             String unselectedPrefix,
-            String footer
+            String footer,
+            List<CategoryEntry> entries
+    ) { }
+
+    public record CategoryEntry(
+            String id,
+            String selected,
+            String unselected
     ) {}
 
     public record GlassPane(
@@ -163,6 +173,7 @@ public record ConfigValues(
     ) {}
 
     public record ConfirmMenuConfig(
+            String title,
             boolean enabled,
             int itemSlot,
             int size,
@@ -197,6 +208,75 @@ public record ConfigValues(
             String takeSelling,
             String cooldown,
             String inventoryFull,
-            String cooldownItem
+            String cooldownItem,
+            String inventoryMinItems,
+            String commissionCharged,
+            String commissionNotEnough,
+            String pendingItemsEmpty,
+            String pendingItemsReceived,
+            String pendingItemsRemaining,
+            String pendingItemsSaved,
+            String pendingItemsAutoReceived,
+            String discordSet,
+            String discordCleared,
+            String storeSet,
+            String storeCleared,
+            String tooLong
     ) {}
+
+    public record InventorySellingConfig(
+            boolean moneyAuc,
+            boolean rublesAuc,
+            int minItems,
+            int minPrice,
+            int maxPrice,
+            int maxItems,
+            String displayName,
+            List<String> displayLore,
+            List<Material> shulkerMaterials,
+            InventoryViewConfig view
+    ) {}
+
+    public record CommissionRule(
+            CommissionMode mode,
+            double fixed,
+            double percent,
+            double min,
+            AuctionCurrency currency
+    ) {}
+
+    public record CommissionConfig(
+            boolean enabled,
+            CommissionRule sell,
+            CommissionRule sellInventory
+    ) {}
+
+    public record InventoryViewConfig(
+            int startSlot,
+            int endSlot,
+            String title,
+            InventoryNavButton prev,
+            InventoryNavButton next,
+            InventoryActionButton cancel,
+            InventoryActionButton confirm,
+            int itemSlot,
+            Map<Integer, GlassPane> glassPanes
+    ) {}
+
+    public record InventoryNavButton(
+            Material material,
+            String name,
+            List<String> lore,
+            int slot,
+            List<Action> actions
+    ) {}
+
+    public record InventoryActionButton(
+            Material material,
+            String name,
+            List<String> lore,
+            List<Integer> slots,
+            List<Action> actions
+    ) {}
+
 }

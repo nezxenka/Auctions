@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
-public final class MainMenuHolder extends AuctionMenuHolder {
+public class MainMenuHolder extends AuctionMenuHolder {
     public MainMenuHolder(AuctionViewType viewType, AuctionCurrency currency, UUID viewer, int page, AuctionSort sort, String sellerFilter, String searchFilter, String category) {
         super(viewType, currency, viewer, page, sort, sellerFilter, searchFilter, category);
     }

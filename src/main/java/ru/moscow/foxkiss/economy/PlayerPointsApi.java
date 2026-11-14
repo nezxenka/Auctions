@@ -13,11 +13,11 @@ public final class PlayerPointsApi {
     public PlayerPointsApi() {
         Object plugin = Bukkit.getPluginManager().getPlugin("PlayerPoints");
         if (!(plugin instanceof PlayerPoints playerPoints)) {
-            throw new IllegalStateException("PlayerPoints not found");
+            throw new IllegalStateException("Плагин PlayerPoints не найден");
         }
         this.api = playerPoints.getAPI();
         if (api == null) {
-            throw new IllegalStateException("PlayerPoints API unavailable");
+            throw new IllegalStateException("API PlayerPoints недоступен");
         }
     }
 
@@ -29,7 +29,7 @@ public final class PlayerPointsApi {
         return api.take(player.getUniqueId(), amount);
     }
 
-    public void deposit(OfflinePlayer player, int amount) {
-        api.give(player.getUniqueId(), amount);
+    public boolean deposit(OfflinePlayer player, int amount) {
+        return api.give(player.getUniqueId(), amount);
     }
 }

@@ -1,15 +1,18 @@
 package ru.moscow.foxkiss.auction.services;
 
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import ru.moscow.foxkiss.auction.AuctionItem;
+import ru.moscow.foxkiss.auction.AuctionLotType;
 import ru.moscow.foxkiss.auction.AuctionRepository;
+import ru.moscow.foxkiss.auction.TakeResult;
 import ru.moscow.foxkiss.auction.services.base.BaseAuctionService;
 import ru.moscow.foxkiss.config.interfaces.IConfigManager;
 import ru.moscow.foxkiss.gui.ItemDisplayFactory;
 import ru.moscow.foxkiss.scheduler.SchedulerService;
 import ru.moscow.foxkiss.utils.PlaceholderUtils;
+import ru.moscow.foxkiss.utils.TextUtils;
 
+import java.util.UUID;
 import java.util.function.Consumer;
 
 public final class AuctionTakeService extends BaseAuctionService {
@@ -24,68 +27,82 @@ public final class AuctionTakeService extends BaseAuctionService {
     }
 
     public void take(Player player, long lotId, Consumer<Boolean> callback) {
+        String operationId = UUID.randomUUID().toString();
+        String playerName = player.getName();
+        long now = System.currentTimeMillis();
         scheduler.runAsync(() -> {
-            if (!repository.markAsSelling(lotId)) {
-                scheduler.runSync(() -> finishWithMessage(player, configManager.getConfigValues().messages().noId(), false, callback));
+            if (repository.markAsProcessing(lotId, operationId, now)) {
+                scheduler.runSync(() -> finishWithMessage(player, configManager.getConfigValues().messages().noId(), callback));
                 return;
             }
 
             AuctionItem item = repository.findById(lotId).orElse(null);
             if (item == null) {
-                repository.restoreStatus(lotId);
-                scheduler.runSync(() -> finishWithMessage(player, configManager.getConfigValues().messages().noId(), false, callback));
+                repository.cancelProcessing(lotId, operationId);
+                scheduler.runSync(() -> finishWithMessage(player, configManager.getConfigValues().messages().noId(), callback));
                 return;
             }
 
-            scheduler.runSync(() -> processTake(player, item, lotId, callback));
+            repository.logTransaction(operationId, lotId, "TAKE", playerName, item.sellerName(), item.currency(), item.amount(), 0.0, "STARTED");
+            scheduler.runSync(() -> processTake(player, item, lotId, operationId, callback));
         });
     }
 
-    private void processTake(Player player, AuctionItem item, long lotId, Consumer<Boolean> callback) {
+    private void processTake(Player player, AuctionItem item, long lotId, String operationId, Consumer<Boolean> callback) {
         if (!player.isOnline()) {
-            transactionService.restoreStatus(lotId);
-            if (callback != null) callback.accept(false);
+            cancelTake(lotId, operationId, () -> { if (callback != null) callback.accept(false); });
             return;
         }
 
         if (!validationService.isOwner(player, item)) {
-            restoreAndFinish(player, lotId, configManager.getConfigValues().messages().noOwn(), callback);
+            cancelTake(lotId, operationId, () -> finishWithMessage(player, configManager.getConfigValues().messages().noOwn(), callback));
             return;
         }
 
-        ItemStack returned = item.getItemStack().clone();
-        if (!validationService.canFit(player, returned)) {
-            restoreAndFinish(player, lotId, configManager.getConfigValues().messages().inventoryFull(), callback);
+        if (item.type() != AuctionLotType.INVENTORY && !validationService.canFit(player, item.itemStack())) {
+            cancelTake(lotId, operationId, () -> finishWithMessage(player, configManager.getConfigValues().messages().inventoryFull(), callback));
             return;
         }
 
+        String playerName = player.getName();
         scheduler.runAsync(() -> {
-            boolean deleted = repository.delete(lotId);
+            TakeResult result = repository.processTake(lotId, operationId, playerName);
+            if (!result.success()) {
+                repository.cancelProcessing(lotId, operationId);
+                repository.updateJournalStatus(operationId, "CANCELLED");
+            }
             scheduler.runSync(() -> {
-                if (!deleted) {
-                    transactionService.restoreStatus(lotId);
-                    finishWithMessage(player, configManager.getConfigValues().messages().noId(), false, callback);
+                if (!result.success()) {
+                    finishWithMessage(player, configManager.getConfigValues().messages().noId(), callback);
                     return;
                 }
-                completeTake(player, item, returned, callback);
+                completeTake(player, item, callback);
             });
         });
     }
 
-    private void completeTake(Player player, AuctionItem item, ItemStack returned, Consumer<Boolean> callback) {
+    private void cancelTake(long lotId, String operationId, Runnable callback) {
+        scheduler.runAsync(() -> {
+            repository.cancelProcessing(lotId, operationId);
+            repository.updateJournalStatus(operationId, "CANCELLED");
+            scheduler.runSync(callback);
+        });
+    }
+
+    private void completeTake(Player player, AuctionItem item, Consumer<Boolean> callback) {
         if (!player.isOnline()) {
             if (callback != null) callback.accept(false);
             return;
         }
 
-        transactionService.giveItem(player, returned);
-        itemFactory.invalidateLotCache(item.getId());
+        transactionService.deliverPending(player, null, configManager);
+        itemFactory.invalidateLotCache(item.id());
 
         String key = validationService.isExpired(item) ? "takeExpired" : "takeSelling";
         String message = key.equals("takeExpired")
                 ? configManager.getConfigValues().messages().takeExpired()
                 : configManager.getConfigValues().messages().takeSelling();
-        player.sendMessage(PlaceholderUtils.applypapi(player, message, configManager));
+        player.sendMessage(TextUtils.component(PlaceholderUtils.apply(player, message, configManager)));
         if (callback != null) callback.accept(true);
     }
 }

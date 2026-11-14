@@ -1,0 +1,90 @@
+# История продаж игрока в текущей валюте аукциона.
+# Этот файл управляет кнопкой в «Ваших товарах» и всем меню истории.
+# В ЭТОМ ФАЙЛЕ слоты считаются от 1 до 54: 54 — последний слот.
+# Цвета: &a, &7, &#ffcc00. item/material: материал или basehead-<base64>.
+# Изменения применяются через /fmauction reload.
+enabled: true
+
+button:
+  item: BOOK
+  slot: 54
+  display_name: '&#ffc500История продаж'
+  lore:
+    - '&7Ваши завершённые продажи'
+    - '&eНажмите, чтобы открыть'
+  # custom-model-data: 1001
+
+menu:
+  size: 54
+  title: '&0История продаж &8{page}/{pages}'
+  # Включительно. Слоты из items автоматически исключаются из этого диапазона.
+  start-slot: 1
+  end-slot: 45
+
+# Шаблон каждой продажи. Переименованный предмет сохраняет своё исходное имя.
+# use-original-item: true — иконка, зачарования и модель проданного предмета.
+# false — вместо него используется item ниже (включая головы basehead-...).
+# Для старых записей без снимка используется материал из журнала.
+# Если материал старой записи неизвестен, используется item ниже.
+# custom-model-data переопределяет модель даже при use-original-item: true.
+#
+# Плейсхолдеры display_name и lore:
+# {item_name} — исходное имя или перевод из items.yml
+# {buyer} / {seller} — покупатель / продавец
+# {date} — дата покупки во временной зоне сервера
+# {price} — полная стоимость покупки; {price_per_item} — стоимость за штуку
+# {symbol} / {symbol_value} — символ валюты; {currency} — VAULT / PLAYER_POINTS
+# {amount} — купленное количество (для лота-инвентаря: 1 комплект)
+# {material} — материал; {id} — ID записи; {timestamp} — время Unix в мс
+# {page} / {pages} — страница / всего страниц; {total} — число сделок
+# PlaceholderAPI также поддерживается, если включён use-papi в config.yml.
+entry:
+  use-original-item: true
+  item: PAPER
+  display_name: '{item_name}'
+  lore:
+    - ''
+    - '&7Кто купил: &f{buyer}'
+    - '&7У кого купил: &f{seller}'
+    - '&7Дата покупки: &f{date}'
+    - '&7Стоимость: &e{price}{symbol}'
+    - '&7Количество: &f{amount}'
+    - '&7За штуку: &e{price_per_item}{symbol}'
+
+empty:
+  item: BARRIER
+  slot: 23
+  display_name: '&cПродаж пока нет'
+  lore:
+    - '&7Здесь появятся ваши завершённые продажи.'
+
+# Любое количество настраиваемых предметов и панелей с произвольными ключами.
+# Без actions или с actions: [] предмет служит только украшением.
+# Действия: [PREVIOUS], [NEXT], [REFRESH], [SELLING], [MAIN], [CLOSE], [HISTORY].
+# {page}, {pages}, {total}, {player}, {symbol}, {currency} работают в названии и lore.
+# Указывайте slot или slots. Все слоты items должны быть уникальными.
+items:
+  panels:
+    item: GRAY_STAINED_GLASS_PANE
+    slots: [46, 47, 48, 52, 53, 54]
+    display_name: ' '
+    lore: []
+    actions: []
+  previous:
+    item: ARROW
+    slot: 49
+    display_name: '&eПредыдущая страница'
+    lore: ['&7Страница {page} из {pages}']
+    actions: ['[PREVIOUS]']
+  next:
+    item: ARROW
+    slot: 51
+    display_name: '&eСледующая страница'
+    lore: ['&7Всего продаж: {total}']
+    actions: ['[NEXT]']
+  back:
+    item: BARRIER
+    slot: 50
+    display_name: '&cНазад к вашим товарам'
+    lore: []
+    actions: ['[SELLING]']

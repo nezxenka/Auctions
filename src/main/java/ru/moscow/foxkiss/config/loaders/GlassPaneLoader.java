@@ -1,12 +1,15 @@
+
 package ru.moscow.foxkiss.config.loaders;
 
 import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
 import ru.moscow.foxkiss.config.ConfigValues;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public final class GlassPaneLoader {
+
     public static Map<Integer, ConfigValues.GlassPane> load(List<Map<?, ?>> entries) {
         Map<Integer, ConfigValues.GlassPane> panes = new HashMap<>();
 
@@ -19,12 +22,14 @@ public final class GlassPaneLoader {
 
             ConfigValues.GlassPane pane = new ConfigValues.GlassPane(material, name, modelData);
 
-            if (entry.containsKey("slots")) {
-                for (Integer slot : (List<Integer>) entry.get("slots")) {
-                    panes.put(slot, pane);
+            if (entry.get("slots") instanceof List<?> slots) {
+                for (Object value : slots) {
+                    if (value instanceof Number number) {
+                        panes.put(number.intValue(), pane);
+                    }
                 }
-            } else {
-                panes.put((Integer) entry.get("slot"), pane);
+            } else if (entry.get("slot") instanceof Number number) {
+                panes.put(number.intValue(), pane);
             }
         }
 

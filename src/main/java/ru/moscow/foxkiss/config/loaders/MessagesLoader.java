@@ -5,12 +5,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import ru.moscow.foxkiss.config.ConfigValues;
 import ru.moscow.foxkiss.utils.TextUtils;
 
-public final class MessagesLoader {
-    private final String prefix;
-
-    public MessagesLoader(String prefix) {
-        this.prefix = prefix;
-    }
+public record MessagesLoader(String prefix) {
 
     public ConfigValues.ConfigMessages load(FileConfiguration config) {
         ConfigurationSection messages = config.getConfigurationSection("messages");
@@ -19,8 +14,13 @@ public final class MessagesLoader {
         ConfigurationSection buy = messages.getConfigurationSection("buy");
         ConfigurationSection expired = messages.getConfigurationSection("expired");
         ConfigurationSection selling = messages.getConfigurationSection("selling");
-        ConfigurationSection sell = config.getConfigurationSection("commands.sell");
-        ConfigurationSection auctionErrors = config.getConfigurationSection("auction.errors");
+        ConfigurationSection commands = config.getConfigurationSection("commands");
+        ConfigurationSection sell = commands.getConfigurationSection("sell");
+        ConfigurationSection auction = config.getConfigurationSection("auction");
+        ConfigurationSection auctionErrors = auction.getConfigurationSection("errors");
+
+        ConfigurationSection search = config.getConfigurationSection("search");
+        ConfigurationSection profile = messages.getConfigurationSection("profile");
 
         return new ConfigValues.ConfigMessages(
                 msg(admin.getString("reload")),
@@ -38,7 +38,7 @@ public final class MessagesLoader {
                 msg(sell.getString("price-too-high")),
                 msg(sell.getString("limit-reached")),
                 msg(sell.getString("database-error")),
-                msg(String.join("\n", config.getStringList("search.enter-player-name"))),
+                msg(String.join("\n", search.getStringList("enter-player-name"))),
                 msg(buy.getString("buy-seller")),
                 msg(buy.getString("otmena")),
                 msg(buy.getString("yspex")),
@@ -48,11 +48,24 @@ public final class MessagesLoader {
                 msg(selling.getString("take")),
                 msg(messages.getString("cooldown")),
                 msg(messages.getString("inventory-full")),
-                msg(messages.getString("cooldown-item"))
+                msg(messages.getString("cooldown-item")),
+                msg(sell.getString("inventory-min-items")),
+                msg(sell.getString("commission-charged")),
+                msg(sell.getString("commission-not-enough")),
+                msg(buy.getString("pending-items-empty")),
+                msg(buy.getString("pending-items-received")),
+                msg(buy.getString("pending-items-remaining")),
+                msg(buy.getString("pending-items-saved")),
+                msg(buy.getString("pending-items-auto-received")),
+                msg(profile.getString("discord-set")),
+                msg(profile.getString("discord-cleared")),
+                msg(profile.getString("store-set")),
+                msg(profile.getString("store-cleared")),
+                msg(profile.getString("too-long"))
         );
     }
 
     private String msg(String raw) {
-        return raw == null ? "" : TextUtils.colorize(raw.replace("%prefix%", prefix));
+        return TextUtils.colorize(raw.replace("%prefix%", prefix));
     }
 }

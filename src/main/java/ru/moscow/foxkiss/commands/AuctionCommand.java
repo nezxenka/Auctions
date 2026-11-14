@@ -1,65 +1,54 @@
 package ru.moscow.foxkiss.commands;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import ru.moscow.foxkiss.auction.AuctionCurrency;
-import ru.moscow.foxkiss.auction.AuctionRepository;
 import ru.moscow.foxkiss.auction.AuctionService;
 import ru.moscow.foxkiss.config.interfaces.IConfigManager;
 import ru.moscow.foxkiss.gui.AuctionMenu;
+import ru.moscow.foxkiss.utils.CommandUtils;
 import ru.moscow.foxkiss.utils.ItemUtils;
+import ru.moscow.foxkiss.utils.MaterialSearchIndex;
 import ru.moscow.foxkiss.utils.PlaceholderUtils;
+import ru.moscow.foxkiss.utils.TextUtils;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 public final class AuctionCommand implements CommandExecutor, TabCompleter {
 
-    private final JavaPlugin plugin;
     private final IConfigManager cfg;
     private final AuctionCurrency cur;
     private final AuctionMenu menu;
     private final AuctionService service;
-    private final AuctionRepository repo;
 
-    private final ObjectList<String> names = new ObjectArrayList<>();
     private final Object2ObjectOpenHashMap<String, String> toMat = new Object2ObjectOpenHashMap<>();
-    private final Map<AuctionCurrency, List<String>> matCache = new HashMap<>();
-    private final Map<AuctionCurrency, Long> timeCache = new HashMap<>();
 
-    public AuctionCommand(JavaPlugin plugin, IConfigManager configManager, AuctionCurrency currency, AuctionMenu auctionMenu, AuctionService auctionService, AuctionRepository repository) {
-        this.plugin = plugin;
-        this.cfg = configManager;
-        this.cur = currency;
-        this.menu = auctionMenu;
-        this.service = auctionService;
-        this.repo = repository;
-        runTask();
-    }
-
-    public void runTask() {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                updateCache();
-            }
-        }.runTaskTimerAsynchronously(plugin, 20L, 6000L);
+    public AuctionCommand(IConfigManager configManager, AuctionCurrency currency, AuctionMenu auctionMenu, AuctionService auctionService) {
+        cfg = configManager;
+        cur = currency;
+        menu = auctionMenu;
+        service = auctionService;
+        updateCache();
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player p)) {
-            sender.sendMessage("Онли плейерс то юзе команд");
+            sender.sendMessage("Команда доступна только для игроков.");
             return true;
         }
 
@@ -69,116 +58,113 @@ public final class AuctionCommand implements CommandExecutor, TabCompleter {
         }
 
         switch (args[0].toLowerCase()) {
-            case "sell" -> { return handleSell(p, args); }
-            case "search" -> { return handleSearch(p, args); }
-            default -> {
-                menu.openMain(p, cur, 0, null, null, null, null);
-                return true;
-            }
+            case "sell" -> handleSell(p, args);
+            case "sellinv" -> handleSellInventory(p, args);
+            case "search" -> handleSearch(p, args);
+            case "items" -> service.takePendingInventoryItems(p, cur);
+            default -> menu.openSeller(p, cur, args[0]);
         }
-    }
 
-    private boolean handleSell(Player p, String[] args) {
-        if (args.length < 2) {
-            p.sendMessage(PlaceholderUtils.applypapi(p, cfg.getConfigValues().messages().noPrice(), cfg));
-            return true;
-        }
-        double price;
-        try { price = Double.parseDouble(args[1]); }
-        catch (NumberFormatException e) {
-            p.sendMessage(PlaceholderUtils.applypapi(p, cfg.getConfigValues().messages().noPrice(), cfg));
-            return true;
-        }
-        service.sell(p, cur, price);
         return true;
     }
 
-    private boolean handleSearch(Player p, String[] args) {
+    private void handleSell(Player p, String[] args) {
+        Double price = CommandUtils.parsePrice(p, args, cfg);
+        if (price == null) return;
+
+        service.sell(p, cur, price);
+    }
+
+    private void handleSellInventory(Player p, String[] args) {
+        Double price = CommandUtils.parsePrice(p, args, cfg);
+        if (price == null) return;
+
+        service.sellInventory(p, cur, price);
+    }
+
+    private void handleSearch(Player p, String[] args) {
         if (args.length < 2) {
-            p.sendMessage(PlaceholderUtils.applypapi(p, cfg.getConfigValues().messages().enterPlayerName(), cfg));
-            return true;
+            sendSearchUsage(p);
+            return;
         }
 
         String query = String.join(" ", Arrays.copyOfRange(args, 1, args.length)).trim();
-        if (query.isEmpty()) {
-            p.sendMessage(PlaceholderUtils.applypapi(p, cfg.getConfigValues().messages().enterPlayerName(), cfg));
-            return true;
+        if (query.isEmpty() || query.equals("начните*вводить*название")) {
+            sendSearchUsage(p);
+            return;
         }
-
-        Material mat = null;
 
         String matName = toMat.get(query.toLowerCase());
-        if (matName != null) mat = Material.getMaterial(matName);
-
-        if (mat == null) mat = Material.matchMaterial(query.toUpperCase());
+        Material mat = matName != null ? Material.getMaterial(matName) : null;
 
         if (mat == null) {
-            menu.openMain(p, cur, 0, null, null, null, null);
-            return true;
+            mat = Material.matchMaterial(query.toUpperCase());
         }
 
-        menu.openMain(p, cur, 0, null, null, mat.name(), "all");
-        return true;
+        menu.openMain(p, cur, 0, null, null, mat != null ? mat.name() : query, "all");
+    }
+
+    private void sendSearchUsage(Player p) {
+        sendMessage(p, cfg.getConfigValues().messages().enterPlayerName());
     }
 
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
-        if (args.length == 0) {
+        if (args.length >= 2 && args[0].equalsIgnoreCase("search")) {
+            String query = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+            if (query.isBlank()) return List.of("начните*вводить*название");
+            int consumed = query.length() - args[args.length - 1].length();
+            List<String> suggestions = new ObjectArrayList<>();
+            Set<String> added = new HashSet<>();
+            for (MaterialSearchIndex.Match match : ItemUtils.getSearchIndex().find(query, 30)) {
+                String completion = match.name().substring(consumed);
+                if (added.add(completion)) suggestions.add(completion);
+            }
+            return suggestions;
+        }
+        if (args.length != 1) {
             return Collections.emptyList();
         }
 
-        if (!sender.hasPermission("fmauction.admin")) {
-            return List.of();
-        }
+        ObjectList<String> completions = new ObjectArrayList<>();
 
-        final ObjectList<String> completions = new ObjectArrayList<>();
-        if (args.length == 1) {
+        if (sender.hasPermission("fmauction.admin")) {
             completions.add("sell");
-            completions.add("search");
-            return getResult(args, completions);
+            completions.add("sellinv");
+
         }
-        return Collections.emptyList();
+
+        completions.add("search");
+        completions.add("items");
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            completions.add(player.getName());
+        }
+
+        return CommandUtils.getResult(args, completions);
     }
 
-    private ObjectList<String> getResult(String[] args, ObjectList<String> completions) {
-        if (completions.isEmpty()) {
-            return completions;
-        }
-
-        final ObjectList<String> result = new ObjectArrayList<>();
-        for (int i = 0; i < completions.size(); i++) {
-            String c = completions.get(i);
-            if (StringUtil.startsWithIgnoreCase(c, args[args.length - 1])) {
-                result.add(c);
-            }
-        }
-        return result;
-    }
-
-    private void updateCache() {
+    public void updateCache() {
         Set<String> all = ItemUtils.getAllTranslatedMaterials();
-
-        names.clear();
         toMat.clear();
 
         for (String matName : all) {
             Material m = Material.getMaterial(matName);
             if (m == null) continue;
+
             String trans = ItemUtils.getTranslation(m);
             if (trans != null && !trans.isEmpty()) {
-                names.add(trans);
-                toMat.put(trans.toLowerCase(), matName);
+                String plainName = PlainTextComponentSerializer.plainText().serialize(TextUtils.component(trans));
+                toMat.put(plainName.toLowerCase(), matName);
             }
         }
-
-        matCache.put(cur, repo.getUniqueMaterialNames(cur));
-        timeCache.put(cur, System.currentTimeMillis());
     }
 
     public void clearCache() {
-        matCache.clear();
-        timeCache.clear();
-        names.clear();
-        toMat.clear();
+        updateCache();
+    }
+
+    private void sendMessage(CommandSender sender, String message) {
+        sender.sendMessage(TextUtils.component(PlaceholderUtils.apply(sender, message, cfg)));
     }
 }

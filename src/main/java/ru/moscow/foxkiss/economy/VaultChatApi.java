@@ -13,7 +13,7 @@ public final class VaultChatApi {
         RegisteredServiceProvider<Chat> provider = Bukkit.getServicesManager().getRegistration(Chat.class);
 
         if (provider == null) {
-            throw new IllegalStateException("Vault chat provider not found");
+            throw new IllegalStateException("Провайдер чата Vault не найден");
         }
 
         this.chat = provider.getProvider();

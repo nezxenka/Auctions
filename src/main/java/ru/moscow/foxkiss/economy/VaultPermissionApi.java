@@ -14,7 +14,7 @@ public final class VaultPermissionApi {
         RegisteredServiceProvider<Permission> provider = Bukkit.getServicesManager().getRegistration(Permission.class);
 
         if (provider == null) {
-            throw new IllegalStateException("Vault permission provider not found");
+            throw new IllegalStateException("Провайдер прав Vault не найден");
         }
 
         this.permission = provider.getProvider();

@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'ru.moscow'
-version = '1.0.3'
+version = '1.0.5'
 
 repositories {
     mavenCentral()
@@ -25,6 +25,7 @@ repositories {
 }
 
 dependencies {
+
     compileOnly("org.projectlombok:lombok:1.18.36")
     annotationProcessor("org.projectlombok:lombok:1.18.36")
 
@@ -82,4 +83,35 @@ processResources {
     filesMatching('plugin.yml') {
         expand props
     }
+}
+
+// Исполняемые проверки и SQL-замеры отделены от основного JAR.
+sourceSets {
+    verification {
+        java.srcDir 'verification/java'
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+    }
+}
+dependencies {
+    verificationImplementation 'com.h2database:h2:2.2.224'
+    verificationImplementation 'org.mockito:mockito-core:5.15.2'
+}
+tasks.register('verifyAuction', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath
+    mainClass = 'ru.moscow.foxkiss.verification.AuctionChecks'
+    maxHeapSize = '192m'
+    jvmArgs '-XX:+UseSerialGC'
+    doFirst {
+        jvmArgs "-javaagent:${configurations.verificationRuntimeClasspath.find { it.name.startsWith('byte-buddy-agent-') }}"
+    }
+}
+tasks.register('benchmarkAuctionSql', JavaExec) {
+    dependsOn verificationClasses
+    classpath = sourceSets.verification.runtimeClasspath
+    mainClass = 'ru.moscow.foxkiss.verification.AuctionChecks'
+    args '--benchmark'
+    maxHeapSize = '192m'
+    jvmArgs '-XX:+UseSerialGC'
 }

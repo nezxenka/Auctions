@@ -1,0 +1,119 @@
+max-items: 41
+display-name: "Инвентарь игрока %player%"
+display-lore:
+  - ""
+  - "&fПродавец: &x&f&f&c&5&0&0%player%"
+  - "&fЦена: &x&f&f&c&5&0&0%price%"
+  - ""
+  - "&aКликни, &fчтобы посмотреть содержимое!"
+# Список материалов, которые случайным образом используются для отображения лота-инвентаря в аукционе.
+# Можно указать любые предметы: шалкеры, сундуки, бочки, эндерсундуки и т.д. Выбирается один случайный из списка.
+item-selling:
+  - "WHITE_SHULKER_BOX"
+  - "ORANGE_SHULKER_BOX"
+view:
+  start-slot: 0
+  end-slot: 44
+  title: "Инвентарь игрока"
+  prev:
+    material: "ARROW"
+    name: "&x&f&f&c&5&0&0Предыдущий инвентарь"
+    lore:
+      - ""
+      - "&fИнвентарь: &x&f&f&c&5&0&0{current}/&7&x&f&f&c&5&0&0{max}"
+      - ""
+      - "&aКликни, &fчтобы открыть!"
+    slot: 45
+    actions:
+      - "[INVENTORY_PREV]"
+  next:
+    material: "ARROW"
+    name: "&x&f&f&c&5&0&0Следующий инвентарь"
+    lore:
+      - ""
+      - "&fИнвентарь: &x&f&f&c&5&0&0{current}/&7&x&f&f&c&5&0&0{max}"
+      - ""
+      - "&aКликни, &fчтобы открыть!"
+    slot: 53
+    actions:
+      - "[INVENTORY_NEXT]"
+  cancel:
+    material: "BARRIER"
+    name: "&x&f&f&c&5&0&0Отменить покупку"
+    lore:
+      - ""
+      - "&fНажми, &fчтобы закрыть меню"
+    slots:
+      - 46
+      - 47
+      - 48
+    actions:
+      - "[CLOSE]"
+  confirm:
+    material: "EMERALD"
+    name: "&x&f&f&c&5&0&0Подтвердить покупку"
+    lore:
+      - ""
+      - "&fЦена: &x&f&f&c&5&0&0%price%"
+      - ""
+      - "&aКликни, &fчтобы купить инвентарь!"
+    slots:
+      - 50
+      - 51
+      - 52
+    actions:
+      - "[BUY]"
+      - "[CLOSE]"
+  item-slot: 49
+  glass:
+    - glass-type: "STAINED_GLASS_PANE"
+      display-name: " "
+      custom-model-data: 0
+      slots:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
+        - 9
+        - 10
+        - 11
+        - 12
+        - 13
+        - 14
+        - 15
+        - 16
+        - 17
+        - 18
+        - 19
+        - 20
+        - 21
+        - 22
+        - 23
+        - 24
+        - 25
+        - 26
+        - 27
+        - 28
+        - 29
+        - 30
+        - 31
+        - 32
+        - 33
+        - 34
+        - 35
+        - 36
+        - 37
+        - 38
+        - 39
+        - 40
+        - 41
+        - 42
+        - 43
+        - 44
+        - 49
+        - 54

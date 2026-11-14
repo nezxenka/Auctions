@@ -1,0 +1,50 @@
+# Профиль продавца. Слоты считаются от 1.
+enabled: true
+max-length: 12
+empty-value: '-'
+
+button:
+  item: NAME_TAG
+  slot: 53
+  display_name: '&#ffc500Профиль продавца'
+  lore:
+    - '&7Discord: &f{discord}'
+    - '&7Магазин: &f{store}'
+    - '&7Продаж за всё время: &f{sales}'
+    - ''
+    - '&eНажмите, чтобы изменить'
+  actions: ['[PROFILE]']
+
+menu:
+  size: 54
+  title: '&0Профиль продавца'
+
+items:
+  discord:
+    item: PLAYER_HEAD
+    slot: 23
+    display_name: '&#5865f2Discord'
+    lore:
+      - '&7Текущий тег: &f{discord}'
+      - ''
+      - '&7Укажите Discord-тег в табличке.'
+      - '&7Можно использовать цвета через &.'
+      - '&eНажмите, чтобы изменить'
+    actions: ['[DISCORD]']
+  store:
+    item: CHEST
+    slot: 25
+    display_name: '&#ffc500Название магазина'
+    lore:
+      - '&7Текущее название: &f{store}'
+      - ''
+      - '&7Укажите название в табличке.'
+      - '&7Можно использовать цвета через &.'
+      - '&eНажмите, чтобы изменить'
+    actions: ['[STORE]']
+  panels:
+    item: GRAY_STAINED_GLASS_PANE
+    slots: [1, 2, 3, 4, 5, 6, 7, 8, 9, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54]
+    display_name: ' '
+    lore: []
+    actions: []

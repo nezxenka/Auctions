@@ -8,18 +8,20 @@ import org.bukkit.entity.Player;
 import ru.moscow.foxkiss.config.interfaces.IConfigManager;
 
 public final class PlaceholderUtils {
+    private static boolean papiEnabled;
+
+    public static void init() {
+        papiEnabled = Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI");
+    }
 
     public static String apply(CommandSender sender, String message, IConfigManager configManager) {
-        if (!configManager.getConfigValues().usePapi()
-                || !(sender instanceof Player player)
-                || !Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+        if (message == null || message.isEmpty()
+                || !papiEnabled
+                || message.indexOf('%') == -1
+                || !configManager.getConfigValues().usePapi()
+                || !(sender instanceof Player player)) {
             return message;
         }
         return PlaceholderAPI.setPlaceholders(player, message);
-    }
-
-    public static Component applypapi(CommandSender sender, String message, IConfigManager configManager) {
-        String processed = apply(sender, message, configManager);
-        return TextUtils.component(processed);
     }
 }

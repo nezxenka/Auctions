@@ -1,3 +1,4 @@
+
 package ru.moscow.foxkiss.commands;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -6,33 +7,26 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import ru.moscow.foxkiss.FMAuction;
 import ru.moscow.foxkiss.config.interfaces.IConfigManager;
+import ru.moscow.foxkiss.utils.CommandUtils;
 import ru.moscow.foxkiss.utils.PlaceholderUtils;
+import ru.moscow.foxkiss.utils.TextUtils;
 
 import java.util.List;
 
-public final class AdminCommand implements CommandExecutor, TabCompleter {
-
-    private final FMAuction plugin;
-    private final IConfigManager configManager;
-
-    public AdminCommand(FMAuction plugin, IConfigManager configManager) {
-        this.plugin = plugin;
-        this.configManager = configManager;
-    }
+public record AdminCommand(FMAuction plugin, IConfigManager configManager) implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!sender.hasPermission("fmauction.admin")) {
-            sender.sendMessage(PlaceholderUtils.applypapi(sender, configManager.getConfigValues().messages().noPermission(), configManager));
+            sendMessage(sender, configManager.getConfigValues().messages().noPermission());
             return true;
         }
 
         if (args.length != 1) {
-            sender.sendMessage(PlaceholderUtils.applypapi(sender, configManager.getConfigValues().messages().unknownSubcommand(), configManager));
+            sendMessage(sender, configManager.getConfigValues().messages().unknownSubcommand());
             return true;
         }
 
@@ -40,7 +34,8 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             handleReload(sender);
             return true;
         }
-        sender.sendMessage(PlaceholderUtils.applypapi(sender, configManager.getConfigValues().messages().unknownSubcommand(), configManager));
+
+        sendMessage(sender, configManager.getConfigValues().messages().unknownSubcommand());
         return true;
     }
 
@@ -49,10 +44,15 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
 
         try {
             plugin.reloadAll();
-            sender.sendMessage(PlaceholderUtils.applypapi(sender, configManager.getConfigValues().messages().reload().replace("{time}", String.valueOf(System.currentTimeMillis() - start)), configManager));
+
+            sendMessage(sender, configManager.getConfigValues().messages().reload().replace("{time}", String.valueOf(System.currentTimeMillis() - start)));
         } catch (Exception e) {
-            sender.sendMessage(PlaceholderUtils.applypapi(sender, configManager.getConfigValues().messages().errorReload().replace("{error}", e.getClass().getSimpleName()), configManager));
+            sendMessage(sender, configManager.getConfigValues().messages().errorReload().replace("{error}", e.getClass().getSimpleName()));
         }
+    }
+
+    private void sendMessage(CommandSender sender, String message) {
+        sender.sendMessage(TextUtils.component(PlaceholderUtils.apply(sender, message, configManager)));
     }
 
     @Override
@@ -62,24 +62,11 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
         }
 
         final ObjectList<String> completions = new ObjectArrayList<>();
+
         if (args.length == 1) {
             completions.add("reload");
         }
 
-        return getResult(args, completions);
-    }
-
-    private ObjectList<String> getResult(String[] args, ObjectList<String> completions) {
-        if (completions.isEmpty()) {
-            return completions;
-        }
-        final ObjectList<String> result = new ObjectArrayList<>();
-        for (int i = 0; i < completions.size(); i++) {
-            String c = completions.get(i);
-            if (StringUtil.startsWithIgnoreCase(c, args[args.length - 1])) {
-                result.add(c);
-            }
-        }
-        return result;
+        return CommandUtils.getResult(args, completions);
     }
 }

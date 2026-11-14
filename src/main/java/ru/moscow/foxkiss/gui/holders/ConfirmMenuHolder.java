@@ -9,13 +9,15 @@ import java.util.UUID;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
-public final class ConfirmMenuHolder extends AuctionMenuHolder {
+public class ConfirmMenuHolder extends AuctionMenuHolder {
     long confirmLotId;
     int confirmAmount;
+    boolean isInventoryBuy;
 
-    public ConfirmMenuHolder(AuctionCurrency currency, UUID viewer, long confirmLotId, int confirmAmount) {
+    public ConfirmMenuHolder(AuctionCurrency currency, UUID viewer, long confirmLotId, int confirmAmount, boolean isInventoryBuy) {
         super(AuctionViewType.CONFIRM, currency, viewer, 0, null, null, null, null);
         this.confirmLotId = confirmLotId;
         this.confirmAmount = confirmAmount;
+        this.isInventoryBuy = isInventoryBuy;
     }
 }

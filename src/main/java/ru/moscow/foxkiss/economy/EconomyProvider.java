@@ -8,5 +8,5 @@ public interface EconomyProvider {
     boolean available(AuctionCurrency currency);
     boolean has(Player player, AuctionCurrency currency, double amount);
     boolean withdraw(Player player, AuctionCurrency currency, double amount);
-    void deposit(OfflinePlayer player, AuctionCurrency currency, double amount);
+    boolean deposit(OfflinePlayer player, AuctionCurrency currency, double amount);
 }

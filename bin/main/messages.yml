@@ -1,0 +1,64 @@
+# =============================================================================
+# messages.yml
+# Все сообщения плагина.
+# %prefix% заменяется на prefix из config.yml автоматически.
+# =============================================================================
+
+commands:
+  creative: "%prefix% §fОтключите режим креатива!"
+  sell:
+    cooldown: "%prefix% §fНе торопись!"
+    non-price: "%prefix% §fНеверная цена"
+    price-too-low: "%prefix% §cЦена слишком низкая! Минимум: §e{min_price}{symbol_value}"
+    price-too-high: "%prefix% §cЦена слишком высокая! Максимум: §e{max_price}{symbol_value}"
+    air: "%prefix% §fНельзя продать воздух"
+    success: "%prefix% §fВаш предмет §aвыставлен§f на продажу за {symbol_value}"
+    limit-reached: "%prefix% §fЛимит на выставление предметов &cизчерпан!"
+    database-error: "%prefix% §cНе удалось выставить предмет. Проверьте консоль сервера."
+    inventory-min-items: "%prefix% §cВ инвентаре должно быть минимум §e{min_items}§c предметов!"
+    commission-charged: "%prefix% §aС баланса списано §e{amount}{symbol_value} §aв качестве комиссии."
+    commission-not-enough: "%prefix% §cНедостаточно средств для комиссии: нужно §e{amount}{symbol_value}"
+
+search:
+  not-found: "%prefix% §fТакой игрок не найден.."
+  enter-player-name:
+    - ""
+    - "&f&x&F&F&A&5&0&0╔ &6Помощь по аукциону:"
+    - "&f&x&F&F&A&5&0&0╠ &fОткрыть меню аукциона &7» &#7133CD/auc"
+    - "&f&x&F&F&A&5&0&0╠ &fОткрыть меню донатного аукциона &7» &#27CA12/dauc"
+    - "&f&x&F&F&A&5&0&0╠ "
+    - "&f&x&F&F&A&5&0&0╠ &fНайти предметы игрока &7» &x&0&E&6&D&F&F/auc &7(ник)"
+    - "&f&x&F&F&A&5&0&0╠ &fНайти предметы игрока &7» &x&0&E&6&D&F&F/dauc &7(ник)"
+    - "&f&x&F&F&A&5&0&0╠ "
+    - "&f&x&F&F&A&5&0&0╠ &fНайти предметы &7» &#F02F62/auc search &7(название предмета)"
+    - "&f&x&F&F&A&5&0&0╠ &fНайти предметы &7» &#23FFFA/dauc search &7(название предмета)"
+    - "&f&x&F&F&A&5&0&0╚"
+
+messages:
+  admin:
+    reload: "%prefix% §fКонфигурация &aперезагружена &fза &x&f&f&c&5&0&0{time} мс."
+    unknown-subcommand: "%prefix% §cНеизвестная &fподкоманда. Используйте /fmauction help"
+    error-reload: "%prefix% §fОшибка при перезагрузке конфига: &c{error}"
+    no-permission: "%prefix% §fУ вас &cнедостаточно &fправ."
+  errors:
+    no-name: "%prefix% §fТовар уже куплен или убран с аукциона."
+    no-id: "%prefix% §fТовар уже куплен или убран с аукциона."
+    no-price: "%prefix% §fТовар уже куплен или убран с аукциона."
+    no-own: "%prefix% §fВы &cне можете &fкупить свой же товар."
+  buy:
+    buy-seller: "%prefix% §aИгрок §f{buyer} §aкупил у вас §f{item_name} §aв количестве §f{amount} §aза §6{price}{symbol_value}"
+    otmena: "%prefix% §fВы отменили покупку!"
+    yspex: "%prefix% §fУспешная §aпокупка§f. Вы потратили §6{symbol_value}"
+    nomoney: "%prefix% §fНедостаточно §cсредств§f для покупки."
+    quantity-exceeded: "%prefix% §fВы &cне можете &fкупить больше, чем &aвыставлено" #§f{max} - вывод максимального допустимого пениза
+  expired:
+    take: "%prefix% §fВы успешно &aзабрали &fпросроченный предмет."
+  selling:
+    take: "%prefix% §fВы успешно &aзабрали &fпредмет с продажи."
+  cooldown: "%prefix% §cВоу, не так быстро! &7Подожди немного..."
+  inventory-full: "%prefix% §cВаш инвентарь полон! Освободите место и попробуйте снова."
+  cooldown-item: "%prefix% &fПодождите ещё"
+
+auction:
+  errors:
+    economy-unavailable: "%prefix% §cЭкономика для этого аукциона недоступна."

@@ -1,21 +1,12 @@
 package ru.moscow.foxkiss.auction;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-import java.util.Comparator;
-
-@Getter
-@RequiredArgsConstructor
 public enum AuctionSort {
-    NEWEST(Comparator.comparingLong(AuctionItem::getCreatedAt).reversed()),
-    OLDEST(Comparator.comparingLong(AuctionItem::getCreatedAt)),
-    EXPENSIVE(Comparator.comparingDouble(AuctionItem::getPrice).reversed()),
-    CHEAP(Comparator.comparingDouble(AuctionItem::getPrice)),
-    EXPENSIVE_PER_ITEM(Comparator.comparingDouble(AuctionItem::pricePerItem).reversed()),
-    CHEAP_PER_ITEM(Comparator.comparingDouble(AuctionItem::pricePerItem));
-
-    private final Comparator<AuctionItem> comparator;
+    NEWEST,
+    OLDEST,
+    EXPENSIVE,
+    CHEAP,
+    EXPENSIVE_PER_ITEM,
+    CHEAP_PER_ITEM;
 
     public AuctionSort next() {
         AuctionSort[] values = values();

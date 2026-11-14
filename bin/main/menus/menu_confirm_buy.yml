@@ -1,0 +1,41 @@
+# =============================================================================
+# Действия: [CONFIRM] — подтвердить покупку, [CANCEL] — отменить, [CLOSE] — закрыть меню
+# =============================================================================
+
+title: "&0Подтверждение покупки"
+
+enable-confirm-menu: true
+item-slot: 13
+size: 27
+
+# CustomModelData поддерживается для кнопок подтверждения:
+# confirm:
+#   item: PAPER
+#   custom-model-data: 2001
+confirm:
+  actions:
+    - "[CONFIRM]"
+    - "[CLOSE]"
+  item: GREEN_STAINED_GLASS_PANE
+  # custom-model-data: 2001
+  slots: [0, 1, 2, 9, 10, 11, 18, 19, 20]
+  name: "&aПодтвердить"
+  lore:
+    - "&x&f&f&c&5&0&0▸ &fНажмите, чтобы &aкупить"
+
+cancel:
+  actions:
+    - "[CANCEL]"
+    - "[CLOSE]"
+  item: RED_STAINED_GLASS_PANE
+  # custom-model-data: 2002
+  slots: [6, 7, 8, 15, 16, 17, 24, 25, 26]
+  name: "&cОтменить"
+  lore:
+    - "&x&f&f&c&5&0&0▸ &fНажмите, чтобы &cотменить"
+
+glass:
+  - glass-type: GRAY_STAINED_GLASS_PANE
+    display-name: "&8ᴡᴡᴡ.ꜰʀᴏsᴛᴍɪɴᴇ.ᴘᴡ"
+    # custom-model-data: 3001
+    slots: [3, 4, 5, 12, 14, 21, 22, 23]

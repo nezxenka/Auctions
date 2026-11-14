@@ -15,3 +15,25 @@ gradlew.bat
 
 *.class
 *.jar
+
+.build/
+target/
+out/
+bin/
+.vscode/
+.fleet/
+*.code-workspace
+*.sublime-workspace
+
+/scheduler-jmh/
+/key-jmh/
+**/src/jmh/
+
+hs_err_pid*.log
+replay_pid*.log
+*.hprof
+*.jfr
+.DS_Store
+Thumbs.db
+Desktop.ini
+*~
